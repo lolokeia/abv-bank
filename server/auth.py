@@ -57,7 +57,7 @@ def login(login_input, pin_input):
     
     name = db.get_name_from_id(user_uuid)
 
-    return response.ok(f"Доброе утро, {name}", {"uuid": user_uuid, "name": name, "login": login})
+    return response.ok(f"Доброе утро, {name}", {"uuid": user_uuid, "name": name, "login": login_input})
 
 
 
@@ -65,6 +65,8 @@ def change_login(user_uuid, new_login):
     """Проверяет возможность смены логина, отправляет новый логин в БД"""
     if db.get_user_by_login(new_login) is not None:
         return response.error("Логин уже занят")
+    if len(new_login) > 32:
+                return response.error("Логин превышает лимит символов в 32 символа")
     db.update_login(user_uuid, new_login)
     return response.ok(f"Логин успешно изменен на {new_login}")
 
@@ -75,6 +77,8 @@ def change_pin(user_uuid, old_pin, new_pin):
     pin_hash = db.get_pin_hash(user_uuid)
     if not check_pin(old_pin, pin_hash):
         return response.error("Старый пин неверен")
+    if len(new_pin) != 4:
+        return response.error("Пин должен состоять из 4 цифр")
     new_hash = hash_pin(new_pin)
     db.update_pin_hash(user_uuid, new_hash)
     return response.ok(f"Пин успешно изменен на {new_pin}")
@@ -84,5 +88,7 @@ def change_pin(user_uuid, old_pin, new_pin):
 def change_name(user_uuid, new_name):
     if not new_name:
         return response.error("Новое имя не может быть пустым!")
+    if len(new_name) > 32:
+            return response.error("Имя превышает лимит символов в 32 символа")
     db.update_name(user_uuid, new_name)
     return response.ok(f"Имя успешно изменено на {new_name}")

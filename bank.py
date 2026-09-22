@@ -2,7 +2,7 @@
 
 from server import db, auth
 from shared import response
-
+from shared import protocol
 
 def clear():
     print("\n" * 3)
@@ -20,9 +20,9 @@ def show_response(response):
 
 
 def menu():
-    print("1. Пополнить")
-    print("2. Снять")
-    print("3. История")
+    print("1. сменить логин")
+    print("2. сменить пин")
+    print("3. сменить имя")
     print("0. Выход из аккаунта")
 def auth_menu():
     print("1. войти")
@@ -58,7 +58,7 @@ def main():
                 show_response(response)
                 if response["status"] == "ok":
                     session["user_uuid"] = response["data"]["uuid"]
-                else: response["status"] = None; continue
+                else: continue
 
             elif choice == "3":
                 print("Выход...")
@@ -76,41 +76,43 @@ def main():
             print(f"\n👤 {name} | 💰 {balance} ₽")
 
         menu()
+        raw = protocol.build({"action": "login", "login": "pavel"})
+        message = protocol.parse(raw)
+        print(message, raw)
         choice = input("\nВыбор: ").strip()
 
-        # # === Пополнение ===
-        # elif choice == "3":
-        #     if "user_uuid" not in session:
-        #         print("❌ Сначала войдите")
-        #     else:
-        #         amount = float(input("Сумма: "))
-        #         response = transactions.deposit(session["user_uuid"], amount)
-        #         show_response(response)
-
-        # # === Снятие ===
-        # elif choice == "4":
-        #     if "user_uuid" not in session:
-        #         print("❌ Сначала войдите")
-        #     else:
-        #         amount = float(input("Сумма: "))
-        #         response = transactions.withdraw(session["user_uuid"], amount)
-        #         show_response(response)
-
-        # === История ===
-        if choice == "5":
+        # === Пополнение ===
+        if choice == "1":
             if "user_uuid" not in session:
                 print("❌ Сначала войдите")
             else:
-                history = db.tr_get_recent(session["user_uuid"], 10)
-                print("\n📜 Последние операции:")
-                for tr in history:
-                    type_, amount, balance_after, desc, date = tr
-                    sign = "+" if amount > 0 else ""
-                    print(f"   {date} | {sign}{amount} ₽ | баланс: {balance_after} ₽ | {desc}")
+                new_login = input("введите новый логин: ")
+                response = auth.change_login(session["user_uuid"], new_login)
+                show_response(response)
+
+        # === Снятие ===
+        elif choice == "2":
+            if "user_uuid" not in session:
+                print("❌ Сначала войдите")
+            else:
+                old_pin = input("Введите старый пин: ")
+                new_pin = input("введите новый пин: ")
+                response = auth.change_pin(session["user_uuid"], old_pin, new_pin)
+                show_response(response)
+
+        # === История ===
+        elif choice == "3":
+            if "user_uuid" not in session:
+                print("❌ Сначала войдите")
+            else:
+                new_name = input("введите новое имя: ")
+                response = auth.change_name(session["user_uuid"], new_name)
+                show_response(response)
+        
 
         # === Выход ===
         elif choice == "0":
-            session = None
+            session = {}
             continue
 
         else:

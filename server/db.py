@@ -21,7 +21,9 @@ def init():
     login TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
     balance REAL,
-    pin_hash TEXT NOT NULL
+    pin_hash TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    role TEXT DEFAULT 'user'
     )
     ''')
 
@@ -84,6 +86,15 @@ def get_pin_hash(id):
     row = cursor.fetchone()
     return row[0] if row else None
 
+def get_login_by_uuid(id):
+    cursor.execute("SELECT login FROM Users WHERE uuid = ?", (id,))
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+def get_role_by_uuid(id):
+    cursor.execute("SELECT role FROM Users WHERE uuid = ?", (id,))
+    return cursor.fetchone() 
+
  # Обновление данных
 def update_bal(id, new_bal):
     cursor.execute("UPDATE Users SET balance = ? WHERE uuid = ?", (new_bal, id))
@@ -129,6 +140,9 @@ def tr_get_recent(user_uuid, limit=10):
         LIMIT ?
     """, (user_uuid, limit))
     return cursor.fetchall()
+
+def tr_rollback():
+    print("заглушка")
 
 
 
