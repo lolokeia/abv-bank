@@ -1,0 +1,22 @@
+# База данных
+*.db
+*.sqlite
+*.sqlite3
+
+# Python-кеш
+__pycache__/
+*.pyc
+*.pyo
+
+# Секреты
+secret.key
+*.key
+
+# VS Code
+.vscode/
+
+# Логи
+*.log
+
+# Тестовые БД
+test_*.db
