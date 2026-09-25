@@ -116,9 +116,11 @@ def handle(request):
 
 if __name__ == "__main__":
     try:
+        log.logo()
+        log.info("Запуск сервера...")
         db.connect("test.db")
         db.init()
-        log.logo()
+        log.info("Сервер запущен!")
 
         # --- Регистрация ---
         r = handle({"action": "register", "data": {"login": "a", "name": "A", "pin": "0000"}})
