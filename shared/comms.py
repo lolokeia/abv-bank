@@ -8,3 +8,9 @@ def ok(message, data=None):
 def error(message):
     """Ответ с ошибкой."""
     return {"status": "error", "message": message}
+
+def request(action, data=None):
+    result = {"action": action}
+    if data:
+        result["data"] = data
+    return result

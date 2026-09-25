@@ -1,7 +1,7 @@
 # test_atm.py
 
 from server import db, auth
-from shared import response
+from shared import comms
 from shared import protocol
 
 def clear():
