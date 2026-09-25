@@ -2,11 +2,12 @@ import sqlite3
 import uuid
 import secrets
 from datetime import datetime, timedelta, timezone
+from config import TOKEN_EXPIRE_MINUTES
 
 connection = None
 cursor = None
 
-token_expire_time = 5
+token_expire_time = TOKEN_EXPIRE_MINUTES
 
 
 def connect(path):
