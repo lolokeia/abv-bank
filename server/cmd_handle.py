@@ -1,5 +1,6 @@
 from tabulate import tabulate
 from server import db, transactions, auth, tokens
+from shared import log
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 import time
@@ -92,7 +93,9 @@ def cmd_token(args, state):
         print(tabulate(db.get_tokens_by_uuid(args[1]), headers=["Token", "UUID", "Time created", "Expiration time"]))
     elif name == "cleanup":
         count = tokens.cleanup()
-        print(f"Deleted {count} expired tokens")
+        msg = f"Deleted {count} expired tokens"
+        print(msg)
+        return msg
 
 
 def cmd_user(args, state):
@@ -251,6 +254,17 @@ def cmd_tr(args, state):
     
     print(f"{tr.get("status")} - {tr.get("message")}")
 
+
+def cmd_log(args, state):
+    if len(args) < 1:
+        print("Usage: log clear")
+        return
+    name = args[0].lower()
+    
+    if name == "clear":
+        path = log.clear()
+        print(f"Cleared {path}")
+
 def cmd_restart(args, state):
     print("Restarting...")
     state["restart"] = True
@@ -268,7 +282,8 @@ COMMANDS = {
     "state": cmd_state,
     "client": cmd_client,
     "restart": cmd_restart,
-    "tr": cmd_tr
+    "tr": cmd_tr,
+    "log": cmd_log,
 }
 
 DESC = {
@@ -278,7 +293,7 @@ DESC = {
     "token": "manage tokens (get|delete|delete_user|nuke_all)",
     "user": "manage users",
     "client": "manage clients",
-    "log": "log level and tail",
+    "log": "log clear",
     "db": "database info",
     "restart": "restart server",
     "exit": "stop server",

@@ -1,6 +1,6 @@
 from server import auth, db, tokens, transactions, cmd_handle
 from shared import comms, protocol, log
-from config import HOST, DB_PATH, PORT
+from config import HOST, DB_PATH, PORT, API_VERSION
 import socket
 import threading
 import time
@@ -17,6 +17,7 @@ state = {
     "requests_total": 0,
     "start_time": time.monotonic(),
     "uptime": 0,
+    "api_ver": 8,
 }
 
 def handle(request):
@@ -156,11 +157,23 @@ def get_local_ip():
 def main():
     try:
         log.logo()
+        if API_VERSION != state["api_ver"]:
+            log.warn(f"WARNING! API version {API_VERSION} detected. server is running on API version {state["api_ver"]}.")
+            log.warn(f"This can cause instabilities and/or crashes.")
+            log.warn(f"You need to confirm server start.")
+            api_confirm = input(f"Confirm server start (Y/N): ")
+            if api_confirm.lower() != "y":
+                log.crit("Server start with API version mismatch is not confirmed. closing server...")
+                state["running"] = False
+                return
+            else:
+                log.warn("Server start with API version mismatch is confirmed. starting server...")
         log.info("Starting server...")
-
         db.connect(DB_PATH)
         db.init()
         log.info(f"{DB_PATH} database connected")
+        count = tokens.cleanup()
+        log.info(f"Cleaned up {count} expired tokens")
         public_ip = get_local_ip
         sock = socket.create_server((HOST, PORT))
         state["sock"] = sock
@@ -184,7 +197,7 @@ def main():
     except KeyboardInterrupt:
         log.warn("ctrl+c detected, stopping server")
     except Exception as e:
-        log.error(f"{type(e).__name__}: {e}")
+        log.crit(f"{type(e).__name__}: {e}")
     finally:
         log.info("Closing server...")
         db.close()
@@ -192,7 +205,8 @@ def main():
             log.info("Restarting...")
             os.execv(sys.executable, [sys.executable] + sys.argv)
         else:
-            state["sock"].close()
+            if state["sock"]:
+                state["sock"].close()
             log.info("server closed")
             sys.exit(0)
 

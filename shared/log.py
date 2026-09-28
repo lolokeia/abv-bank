@@ -1,27 +1,27 @@
 from datetime import datetime
 from config import LOG_PATH
+from shared import colorlib
 
 
-RED = "\033[91m"
-YELLOW = "\x1B[33m"
-GREEN = "\033[92m"
-RESET = "\033[0m"
+def datetime_now():
+    return datetime.now().strftime('%d.%m.%Y %H:%M:%S')
 
+def time_now():
+    return datetime.now().strftime('%H:%M:%S')
 
-def error(msg):
+def _log(level, color, msg, fullcoltext=False):
     with open(LOG_PATH, "a", encoding="utf-8") as f:
-        f.write(f"{datetime.now()} | [ERROR] - {msg}\n")
-    print(f"{datetime.now()} | {RED} [ERROR] {RESET} - {msg}\n")
+        f.write(f"{datetime_now()} | [{level}] - {msg}\n")
+    
+    if fullcoltext:
+        print(f"{time_now()} | {color}[{level}] - {msg}{colorlib.RESET}")
+    else:
+        print(f"{time_now()} | {color}[{level}]{colorlib.RESET} - {msg}")
 
-def warn(msg):
-    with open(LOG_PATH, "a", encoding="utf-8") as f:
-        f.write(f"{datetime.now()} | [WARN] - {msg}\n")
-    print(f"{datetime.now()} | {YELLOW} [WARN] {RESET} - {msg}\n")
-
-def info(msg):
-    with open(LOG_PATH, "a", encoding="utf-8") as f:
-        f.write(f"{datetime.now()} | [INFO] - {msg}\n")
-    print(f"{datetime.now()} | {GREEN} [INFO] {RESET} - {msg}\n")
+def error(msg): _log("ERROR", colorlib.BOLD + colorlib.RED, msg, True)
+def warn(msg):  _log("WARN", colorlib.YELLOW, msg)
+def info(msg):  _log("INFO", colorlib.GREEN, msg)
+def crit(msg):  _log("CRITICAL", colorlib.BOLD + colorlib.MAGENTA, msg, True)
 
 
 logo_art = """
@@ -30,10 +30,19 @@ logo_art = """
 ███████║██████╔╝██║   ██║    ██████╔╝███████║██╔██╗ ██║█████╔╝ 
 ██╔══██║██╔══██╗╚██╗ ██╔╝    ██╔══██╗██╔══██║██║╚██╗██║██╔═██╗ 
 ██║  ██║██████╔╝ ╚████╔╝     ██████╔╝██║  ██║██║ ╚████║██║  ██╗
-╚═╝  ╚═╝╚═════╝   ╚═══╝      ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝"""
+╚═╝  ╚═╝╚═════╝   ╚═══╝      ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝
+                    made by lolokeia\n"""
 
 def logo():
     with open(LOG_PATH, "a", encoding="utf-8") as f:
-        f.write(f"="*80)
+        f.write(f"="*23 + f"server started at {datetime_now()}" + f"="*22 + "\n")
         f.write(f"\n")
     print(logo_art)
+
+def clear():
+    with open(LOG_PATH, "w", encoding="utf-8") as f:
+        f.write("="*35 + "LOG CLEARED" + "="*36 + "\n")
+        f.write(f"\n")
+        pass
+
+    return LOG_PATH
