@@ -23,3 +23,8 @@ def revoke(token):
 
 def revoke_all(user_uuid):
     db.remove_token_by_uuid(user_uuid)
+
+def cleanup():
+    now = get_current_datetime()
+    count = db.remove_expired_tokens(now)
+    return count

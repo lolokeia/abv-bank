@@ -126,6 +126,15 @@ def burn(user_uuid, pin_input):
     db.tr_add(user_uuid, "burn", -balance, 0, "Сжигание")
     return comms.ok("Баланс обнулен", {"new_balance": 0})
 
+def get_balance(user_uuid):
+    if user_uuid is None:
+        return comms.error("Пользователь не найден", "user_not_found")
+    bal = db.get_bal(user_uuid)
+    if bal is None:
+        return comms.error("Пользователя не существует", "user_not_exists")
+    return comms.ok(f"Баланс: {bal}", {"balance": bal})
+
+
 def get_history(user_uuid, get_recent: bool):
     if not user_uuid:
         return comms.error("Пользователь не найден", "user_not_found")

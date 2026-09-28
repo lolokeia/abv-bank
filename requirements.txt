@@ -1,1 +1,3 @@
 bcrypt
+tabulate
+prompt_toolkit

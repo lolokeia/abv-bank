@@ -1,21 +1,29 @@
-from server import auth, db, tokens, transactions
-from shared import comms, protocol
+from server import auth, db, tokens, transactions, cmd_handle
+from shared import comms, protocol, log
 from config import HOST, DB_PATH, PORT
-from shared import log
+import socket
+import threading
+import time
+import os
 import sys
-import traceback
 
-
-def _excepthook(exc_type, exc_value, exc_tb):
-    log.error(f"НЕОБРАБОТАННОЕ ИСКЛЮЧЕНИЕ: {exc_type.__name__}: {exc_value}")
-    log.error(traceback.format_exception(exc_type, exc_value, exc_tb))
-
-
-sys.excepthook = _excepthook
-
+state = {
+    "sock": None,
+    "running": True,
+    "restart": False,
+    "debug": False,
+    "clients": {},
+    "lock": threading.Lock(),
+    "requests_total": 0,
+    "start_time": time.monotonic(),
+    "uptime": 0,
+}
 
 def handle(request):
     try:
+        state["requests_total"] += 1
+
+        if state["debug"]: log.info(f"request={request}")
         action = request.get("action")
         data = request.get("data", {})
 
@@ -46,7 +54,10 @@ def handle(request):
             tokens.revoke(token)
             return comms.ok("Выход выполнен")
 
-
+        elif action == "get_balance":
+            balance = transactions.get_balance(user_uuid)
+            return balance
+        
         elif action == "deposit":
             amount = data["amount"]
             deposit = transactions.deposit(user_uuid, amount)
@@ -97,81 +108,86 @@ def handle(request):
 
         else:
             return comms.error("Неверный запрос", "bad_request")
+
             
     except Exception as e:
-        log.error(e)
-        return comms.error(f"Ошибка при выполнении запроса: {e}", "bad_request")
+        log.error(f"Error handling request: {e}")
+        return comms.error(f"Возникла внутренняя ошибка при обработке запроса", "internal_error")
+
+
+clients = state["clients"]
+clients_lock = state["lock"]
+
+def client_handle(conn, addr):
+    try:
+        with clients_lock:
+            clients[conn] = addr
+        while True:
+           request = protocol.recv_message(conn)
+           if not request: break
+           response = handle(request)
+
+           if response.get('status') == "error":
+               log.warn(f"{addr} {response.get('login', '')} | {request.get('action')} >>> {response.get('status')} - {response.get('code', '')}")
+           else:
+               log.info(f"{addr} {response.get('login', '')} | {request.get('action')} >>> {response.get('status')}")
+
+           protocol.send_message(conn, response)
+
+    except ConnectionResetError:
+        log.warn(f"Client reset: {addr}")
+    except Exception as e:
+        log.error(f"Error handling client: {e}")
+
+    finally:
+        conn.close()
+        with clients_lock:
+            clients.pop(conn, None)
 
 
 
+def main():
+    try:
+        log.logo()
+        log.info("Starting server...")
 
+        db.connect(DB_PATH)
+        db.init()
+        log.info(f"{DB_PATH} database connected")
 
+        sock = socket.create_server((HOST, PORT))
+        state["sock"] = sock
+        sock.settimeout(1.0)
+        log.info(f"Server started on {HOST}:{PORT}")
+        threading.Thread(target=cmd_handle.handle, args=(state,), daemon=True).start()
 
+        while state["running"]:
+            try:
+                conn, addr = sock.accept()
+                log.info(f"Client connected: {addr}")
 
+                threading.Thread(target=client_handle, args=(conn, addr), daemon=True).start()
+            except socket.timeout:
+                continue
+            except OSError:
+                break
 
-
-
+    except KeyboardInterrupt:
+        log.warn("ctrl+c detected, stopping server")
+    except Exception as e:
+        log.error(f"{type(e).__name__}: {e}")
+    finally:
+        log.info("Closing server...")
+        db.close()
+        if state.get("restart"):
+            log.info("Restarting...")
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+        else:
+            state["sock"].close()
+            log.info("server closed")
+            sys.exit(0)
 
 
 
 if __name__ == "__main__":
-    try:
-        log.logo()
-        log.info("Запуск сервера...")
-        db.connect("test.db")
-        db.init()
-        log.info("Сервер запущен!")
-
-        # --- Регистрация ---
-        r = handle({"action": "register", "data": {"login": "a", "name": "A", "pin": "0000"}})
-        if r["status"] == "ok":
-            log.info(f"register: ok, login={r['data']['login']}")
-            token = r["data"]["token"]           # токен не в лог
-        else:
-            log.warn(f"register: {r['code']}")
-            token = None
-
-        if token is None:
-            log.error("нет токена, дальше идти нельзя")
-            db.close()
-            sys.exit(1)
-
-        # --- Депозит ---
-        r = handle({"action": "deposit", "token": token, "data": {"amount": 500}})
-        if r["status"] == "ok":
-            log.info(f"deposit: ok, balance={r['data']['new_balance']}")
-        else:
-            log.warn(f"deposit: {r['code']}")
-
-        # --- Снятие ---
-        r = handle({"action": "withdraw", "token": token, "data": {"amount": 100}})
-        if r["status"] == "ok":
-            log.info(f"withdraw: ok, balance={r['data']['new_balance']}")
-        else:
-            log.warn(f"withdraw: {r['code']}")
-
-        # --- История ---
-        r = handle({"action": "get_history", "token": token, "data": {"isrecent": True}})
-        if r["status"] == "ok":
-            count = len(r["data"]["transactions"])
-            log.info(f"get_history: ok, {count} транзакций")
-        else:
-            log.warn(f"get_history: {r['code']}")
-
-        # --- Logout ---
-        r = handle({"action": "logout", "token": token})
-        if r["status"] == "ok":
-            log.info("logout: ok")
-        else:
-            log.warn(f"logout: {r['code']}")
-
-        # --- После logout токен должен быть мёртв ---
-        r = handle({"action": "deposit", "token": token, "data": {"amount": 100}})
-        if r["status"] == "error" and r["code"] == "session_expired":
-            log.info("после logout: session_expired — правильно")
-        else:
-            log.error(f"после logout ожидался session_expired, получено {r}")
-
-        db.close()
-    except Exception as e:
-        log.error(f"{type(e).__name__}: {e}")
+    main()

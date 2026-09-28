@@ -37,7 +37,6 @@ def register(login, name, pin_input):
             return comms.error("Ошибка при создании пользователя", "user_cannot_be_created")
 
     token = db.create_token(user_uuid)
-
     return comms.ok(f"Регистрация успешна, {name}.", {"login": login, "name": name, "token": token})
 
 

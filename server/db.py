@@ -12,7 +12,7 @@ token_expire_time = TOKEN_EXPIRE_MINUTES
 
 def connect(path):
     global connection, cursor
-    connection = sqlite3.connect(path)
+    connection = sqlite3.connect(path, check_same_thread=False)
     connection.execute("PRAGMA foreign_keys = ON")
     cursor = connection.cursor()
     return(connection, cursor)
@@ -71,7 +71,7 @@ def create_user(login, name, pin_hash):
 
 # Получение данных
 def get_user(user_uuid):
-    cursor.execute("SELECT * FROM Users WHERE uuid = ?", (user_uuid,))
+    cursor.execute("SELECT uuid, login, name, balance, created_at, role FROM Users WHERE uuid = ?", (user_uuid,))
     return cursor.fetchone() 
 
 def get_user_by_login(login):
@@ -128,6 +128,8 @@ def update_pin_hash(user_uuid, new_pin_hash):
 
 
 
+
+
 # транзакции
 def tr_add(user_uuid, type, amount, balance_after, description):
     cursor.execute("""INSERT INTO Transactions (user_uuid, type, amount, balance_after, description)
@@ -163,8 +165,10 @@ def tr_rollback():
 # Удаление пользователя
 def delete_user(user_uuid):
     cursor.execute("DELETE FROM Transactions WHERE user_uuid = ?", (user_uuid,))
+    cursor.execute("DELETE FROM Tokens WHERE uuid = ?", (user_uuid,))
     cursor.execute("DELETE FROM Users WHERE uuid = ?", (user_uuid,))
     connection.commit()
+
 
 # Работа с токенами
 def create_token(user_uuid):
@@ -193,6 +197,33 @@ def remove_token_by_uuid(user_uuid):
 def unsafe_remove_all_tokens():
     cursor.execute("DELETE FROM Tokens")
     connection.commit()
+
+def remove_expired_tokens(now_str):
+    cursor.execute("DELETE FROM Tokens WHERE expires_at < ?", (now_str,))
+    connection.commit()
+    return cursor.rowcount
+
+
+def table_get_users():
+    cursor.execute("SELECT uuid, login, name, balance, created_at, role FROM Users")
+    return cursor.fetchall()
+
+def table_get_tr():
+    cursor.execute("SELECT * FROM Transactions")
+    return cursor.fetchall()
+
+def table_get_tokens():
+    cursor.execute("SELECT * FROM Tokens")
+    return cursor.fetchall()
+
+
+def unsafe_set_balance_admin(user_uuid, amount):
+    cursor.execute("UPDATE Users SET balance = ? WHERE uuid = ?", (amount, user_uuid))
+    bal = get_bal(user_uuid)
+    tr_add(user_uuid, "set_balance", amount - bal, amount, "Установлено администратором")
+    connection.commit()
+
+
 
 
 def close():
