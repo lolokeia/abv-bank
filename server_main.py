@@ -144,7 +144,14 @@ def client_handle(conn, addr):
         with clients_lock:
             clients.pop(conn, None)
 
-
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
 
 def main():
     try:
@@ -154,11 +161,13 @@ def main():
         db.connect(DB_PATH)
         db.init()
         log.info(f"{DB_PATH} database connected")
-
+        public_ip = get_local_ip
         sock = socket.create_server((HOST, PORT))
         state["sock"] = sock
         sock.settimeout(1.0)
         log.info(f"Server started on {HOST}:{PORT}")
+        log.info(f"You can connect via this ip address:")
+        log.info(f"ip: {public_ip()}, port: {PORT}")
         threading.Thread(target=cmd_handle.handle, args=(state,), daemon=True).start()
 
         while state["running"]:
