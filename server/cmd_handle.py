@@ -4,6 +4,7 @@ from shared import log
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 import time
+import pyperclip
 
 session = PromptSession()
 
@@ -254,6 +255,10 @@ def cmd_tr(args, state):
     
     print(f"{tr.get("status")} - {tr.get("message")}")
 
+def cmd_ip(args, state):
+    public_ip = state["p_ip"]
+    pyperclip.copy(public_ip)
+    print(f"Copied ip-adress to clipboard: {pyperclip.paste()}")
 
 def cmd_log(args, state):
     if len(args) < 1:
@@ -284,6 +289,7 @@ COMMANDS = {
     "restart": cmd_restart,
     "tr": cmd_tr,
     "log": cmd_log,
+    "ip": cmd_ip
 }
 
 DESC = {
@@ -297,6 +303,8 @@ DESC = {
     "db": "database info",
     "restart": "restart server",
     "exit": "stop server",
+    "tr": "manage transactions",
+    "ip": "copy ip to clipboard"
 }
 
 

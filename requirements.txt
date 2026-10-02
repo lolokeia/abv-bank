@@ -1,3 +1,4 @@
 bcrypt
 tabulate
 prompt_toolkit
+pyperclip

@@ -1,5 +1,5 @@
 from server import auth, db, tokens, transactions, cmd_handle
-from shared import comms, protocol, log
+from shared import comms, protocol, log, collibry
 from config import HOST, DB_PATH, PORT, API_VERSION
 import socket
 import threading
@@ -17,14 +17,17 @@ state = {
     "requests_total": 0,
     "start_time": time.monotonic(),
     "uptime": 0,
-    "api_ver": 8,
+    "api_ver": 9,
+    "p_ip": ""
 }
 
 def handle(request):
     try:
-        state["requests_total"] += 1
+        with state["lock"]:
+            state["requests_total"] += 1
 
         if state["debug"]: log.info(f"request={request}")
+        
         action = request.get("action")
         data = request.get("data", {})
 
@@ -136,7 +139,7 @@ def client_handle(conn, addr):
            protocol.send_message(conn, response)
 
     except ConnectionResetError:
-        log.warn(f"Client reset: {addr}")
+        log.warn(f"Client connection reset: {addr}")
     except Exception as e:
         log.error(f"Error handling client: {e}")
 
@@ -168,6 +171,7 @@ def main():
                 return
             else:
                 log.warn("Server start with API version mismatch is confirmed. starting server...")
+
         log.info("Starting server...")
         db.connect(DB_PATH)
         db.init()
@@ -179,8 +183,10 @@ def main():
         state["sock"] = sock
         sock.settimeout(1.0)
         log.info(f"Server started on {HOST}:{PORT}")
-        log.info(f"You can connect via this ip address:")
+        log.info(f"You can connect via this ip address or type \"ip\" to copy ip to clipboard:")
         log.info(f"ip: {public_ip()}, port: {PORT}")
+        state["p_ip"] = public_ip() + ":" + str(PORT)
+        log.info(f"To see all supported commands, type HELP")
         threading.Thread(target=cmd_handle.handle, args=(state,), daemon=True).start()
 
         while state["running"]:

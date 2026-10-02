@@ -1,6 +1,6 @@
 from datetime import datetime
 from config import LOG_PATH
-from shared import colorlib
+from shared import collibry
 
 
 def datetime_now():
@@ -14,14 +14,14 @@ def _log(level, color, msg, fullcoltext=False):
         f.write(f"{datetime_now()} | [{level}] - {msg}\n")
     
     if fullcoltext:
-        print(f"{time_now()} | {color}[{level}] - {msg}{colorlib.RESET}")
+        print(f"{collibry.BRIGHT_BLACK}{time_now()}{collibry.RESET} | {color}[{level}] - {msg}{collibry.RESET}")
     else:
-        print(f"{time_now()} | {color}[{level}]{colorlib.RESET} - {msg}")
+        print(f"{collibry.BRIGHT_BLACK}{time_now()}{collibry.RESET} | {color}[{level}]{collibry.RESET} - {msg}")
 
-def error(msg): _log("ERROR", colorlib.BOLD + colorlib.RED, msg, True)
-def warn(msg):  _log("WARN", colorlib.YELLOW, msg)
-def info(msg):  _log("INFO", colorlib.GREEN, msg)
-def crit(msg):  _log("CRITICAL", colorlib.BOLD + colorlib.MAGENTA, msg, True)
+def error(msg): _log("ERROR", collibry.BOLD + collibry.RED, msg, True)
+def warn(msg):  _log("WARN", collibry.YELLOW, msg)
+def info(msg):  _log("INFO", collibry.GREEN, msg)
+def crit(msg):  _log("CRITICAL", collibry.BOLD + collibry.BG_RED, msg, True)
 
 
 logo_art = """

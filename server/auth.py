@@ -2,6 +2,10 @@ from server import db, tokens
 from shared import comms
 import bcrypt
 
+def isdigit(num):
+    try: num = int(num); return True
+    except ValueError: return False
+
 def hash_pin(pin: str) -> str:
     return bcrypt.hashpw(pin.encode(), bcrypt.gensalt()).decode() #хеширпует пин код
 
@@ -17,6 +21,9 @@ def register(login, name, pin_input):
 
     if len(pin_input) != 4:
          return comms.error("Пин может состоять только из 4 цифр", "invalid_pin")
+
+    if isdigit(pin_input) is False:
+        return comms.error("Пин должен состоять из цифр!", "invalid_pin")
     
     if not login.strip(): # проверки на наличие ввода
         return comms.error("Логин не может быть пустым", "login_is_empty")

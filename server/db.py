@@ -3,11 +3,14 @@ import uuid
 import secrets
 from datetime import datetime, timedelta, timezone
 from config import TOKEN_EXPIRE_MINUTES
+import threading
+db_lock = threading.Lock()
 
 connection = None
 cursor = None
 
 token_expire_time = TOKEN_EXPIRE_MINUTES
+
 
 
 def connect(path):
@@ -54,6 +57,7 @@ def init():
         FOREIGN KEY (uuid) REFERENCES Users(uuid))''')
     connection.commit()
 
+
 def create_user(login, name, pin_hash):
     usr_uuid = str(uuid.uuid4())
     bal = 0
@@ -70,14 +74,17 @@ def create_user(login, name, pin_hash):
 
 
 # Получение данных
+
 def get_user(user_uuid):
     cursor.execute("SELECT uuid, login, name, balance, created_at, role FROM Users WHERE uuid = ?", (user_uuid,))
     return cursor.fetchone() 
+
 
 def get_user_by_login(login):
     cursor.execute("SELECT uuid FROM Users WHERE login = ?", (login,))
     row = cursor.fetchone()
     return row[0] if row else None
+
 
 def get_name_from_id(user_uuid):
     cursor.execute("SELECT name FROM Users WHERE uuid = ?", (user_uuid,))
@@ -85,41 +92,50 @@ def get_name_from_id(user_uuid):
     return row[0] if row else "Пользователь"
 
 
+
 def get_bal(user_uuid):
     cursor.execute("SELECT balance FROM Users WHERE uuid = ?", (user_uuid,))
     row = cursor.fetchone()
     return row[0] if row else 0
 
+
 def get_users_count():
     cursor.execute("SELECT COUNT(*) FROM Users")
     return cursor.fetchone()[0]
+
 
 def get_pin_hash(user_uuid):
     cursor.execute("SELECT pin_hash FROM Users WHERE uuid = ?", (user_uuid,))
     row = cursor.fetchone()
     return row[0] if row else None
 
+
 def get_login_by_uuid(user_uuid):
     cursor.execute("SELECT login FROM Users WHERE uuid = ?", (user_uuid,))
     row = cursor.fetchone()
     return row[0] if row else None
+
 
 def get_role_by_uuid(user_uuid):
     cursor.execute("SELECT role FROM Users WHERE uuid = ?", (user_uuid,))
     return cursor.fetchone() 
 
  # Обновление данных
+
 def update_bal(user_uuid, new_bal):
     cursor.execute("UPDATE Users SET balance = ? WHERE uuid = ?", (new_bal, user_uuid))
     connection.commit()
+
 
 def update_name(user_uuid, new_name):
     cursor.execute("UPDATE Users SET name = ? WHERE uuid = ?", (new_name, user_uuid))
     connection.commit()
 
+
 def update_login(user_uuid, new_login):
     cursor.execute("UPDATE Users SET login = ? WHERE uuid = ?", (new_login, user_uuid))
     connection.commit()
+
 
 def update_pin_hash(user_uuid, new_pin_hash):
     cursor.execute("UPDATE Users SET pin_hash = ? WHERE uuid = ?", (new_pin_hash, user_uuid))
@@ -131,11 +147,13 @@ def update_pin_hash(user_uuid, new_pin_hash):
 
 
 # транзакции
+
 def tr_add(user_uuid, type, amount, balance_after, description):
     cursor.execute("""INSERT INTO Transactions (user_uuid, type, amount, balance_after, description)
     VALUES (?, ?, ?, ?, ?)""", (user_uuid, type, amount, balance_after, description))
     connection.commit()
     return cursor.lastrowid
+
 
 def tr_get_all(user_uuid):
     cursor.execute("""
@@ -145,6 +163,7 @@ def tr_get_all(user_uuid):
         ORDER BY id DESC
     """, (user_uuid,))
     return cursor.fetchall()
+
 
 def tr_get_recent(user_uuid, limit=10):
     cursor.execute("""
@@ -163,6 +182,7 @@ def tr_rollback():
 
 
 # Удаление пользователя
+
 def delete_user(user_uuid):
     cursor.execute("DELETE FROM Transactions WHERE user_uuid = ?", (user_uuid,))
     cursor.execute("DELETE FROM Tokens WHERE uuid = ?", (user_uuid,))
@@ -171,6 +191,7 @@ def delete_user(user_uuid):
 
 
 # Работа с токенами
+
 def create_token(user_uuid):
     token = secrets.token_urlsafe(32)
     expires_at = (datetime.now(timezone.utc) + timedelta(minutes=token_expire_time)).strftime('%Y-%m-%d %H:%M:%S')
@@ -178,25 +199,31 @@ def create_token(user_uuid):
     connection.commit()
     return token
 
+
 def get_tokens_by_uuid(user_uuid):
     cursor.execute("SELECT * FROM Tokens WHERE uuid = ?", (user_uuid,))
     return cursor.fetchall()
+
 
 def get_uuid_from_token(token):
     cursor.execute("SELECT uuid, expires_at FROM Tokens WHERE token = ?", (token,))
     return cursor.fetchone()
 
+
 def remove_token(token):
     cursor.execute("DELETE FROM Tokens WHERE token = ?", (token,))
     connection.commit()
+
 
 def remove_token_by_uuid(user_uuid):
     cursor.execute("DELETE FROM Tokens WHERE uuid = ?", (user_uuid,))
     connection.commit()
 
+
 def unsafe_remove_all_tokens():
     cursor.execute("DELETE FROM Tokens")
     connection.commit()
+
 
 def remove_expired_tokens(now_str):
     cursor.execute("DELETE FROM Tokens WHERE expires_at < ?", (now_str,))
@@ -204,13 +231,16 @@ def remove_expired_tokens(now_str):
     return cursor.rowcount
 
 
+
 def table_get_users():
     cursor.execute("SELECT uuid, login, name, balance, created_at, role FROM Users")
     return cursor.fetchall()
 
+
 def table_get_tr():
     cursor.execute("SELECT * FROM Transactions")
     return cursor.fetchall()
+
 
 def table_get_tokens():
     cursor.execute("SELECT * FROM Tokens")
@@ -218,9 +248,10 @@ def table_get_tokens():
 
 
 def unsafe_set_balance_admin(user_uuid, amount):
+    old_bal = get_bal(user_uuid)
     cursor.execute("UPDATE Users SET balance = ? WHERE uuid = ?", (amount, user_uuid))
     bal = get_bal(user_uuid)
-    tr_add(user_uuid, "set_balance", amount - bal, amount, "Установлено администратором")
+    tr_add(user_uuid, "set", bal - old_bal, amount, "Установлено администратором")
     connection.commit()
 
 
