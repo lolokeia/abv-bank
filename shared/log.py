@@ -22,7 +22,7 @@ def error(msg): _log("ERROR", collibry.BOLD + collibry.RED, msg, True)
 def warn(msg):  _log("WARN", collibry.YELLOW, msg)
 def info(msg):  _log("INFO", collibry.GREEN, msg)
 def crit(msg):  _log("CRITICAL", collibry.BOLD + collibry.BG_RED, msg, True)
-
+def con(msg): _log("con", collibry.BG_BRIGHT_BLACK, msg)
 
 logo_art = """
  █████╗ ██████╗ ██╗   ██╗    ██████╗  █████╗ ███╗   ██╗██╗  ██╗

@@ -1,6 +1,16 @@
 from server import db, tokens
 from shared import comms
 import bcrypt
+import re
+
+BANNED_LOGINS = {
+    "admin", "administrator", "root", "superuser",
+    "support", "help", "tech", "techsupport",
+    "system", "server", "bot", "moderator", "mod",
+    "billing", "finance", "payment", "test", "tester",
+    "login", "logout", "register", "auth", "api",
+    "null", "undefined", "none", "select", "drop", "con"
+}
 
 def isdigit(num):
     try: num = int(num); return True
@@ -13,8 +23,7 @@ def check_pin(pin: str, stored_hash: str) -> bool:
     return bcrypt.checkpw(pin.encode(), stored_hash.encode()) # проверяет пин, возвращает T or F
 
 
-
-def register(login, name, pin_input):
+def register(login, name, pin_input, name_bypass=False):
     """Регистрирует пользователя, проверяет правила и обращается к БД."""
     if pin_input is None: 
         return comms.error("Пин не введен", "pin_is_empty")
@@ -33,6 +42,17 @@ def register(login, name, pin_input):
     
     if len(login) > 32 or len(name) > 32:
         return comms.error("Логин или имя превышают лимит символов в 32 символа", "login_exceeds_32")
+
+    if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\-]+$", login):
+        return comms.error("В логине разрешены только буквы А-Я, A-Z, и цифры 0-9, а так же _ и -", "invalid_login")
+
+    if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\-]+$", name):
+        return comms.error("В логине разрешены только буквы А-Я, A-Z, и цифры 0-9, а так же _ и -", "invalid_name")
+    
+    clean_login = login.strip().lower()
+
+    if clean_login in BANNED_LOGINS and name_bypass == False:
+        return comms.error("Логин запрещен для регистрации", "banned_login")
     
     if db.get_user_by_login(login) is not None:
         return comms.error("Такой логин уже занят", "login_taken")
@@ -67,7 +87,7 @@ def login(login_input, pin_input):
 
     token = db.create_token(user_uuid)
 
-    return comms.ok(f"Доброе утро, {name}", {"token": token, "name": name, "login": login_input})
+    return comms.ok(f"Логин успешен, {name}", {"token": token, "name": name, "login": login_input})
 
 
 
@@ -80,7 +100,7 @@ def change_login(user_uuid, new_login):
     if len(new_login) > 32:
                 return comms.error("Логин превышает лимит символов в 32 символа", "login_exceeds_32")
     db.update_login(user_uuid, new_login)
-    return comms.ok(f"Логин успешно изменен на {new_login}")
+    return comms.ok(f"Логин успешно изменен на @{new_login}")
 
 
 

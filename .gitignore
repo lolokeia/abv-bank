@@ -8,8 +8,7 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Секреты
-secret.key
+# ключи
 *.key
 
 # VS Code
@@ -17,6 +16,3 @@ secret.key
 
 # Логи
 *.log
-
-# Тестовые БД
-test_*.db

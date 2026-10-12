@@ -137,8 +137,8 @@ def cmd_user(args, state):
         if len(args) < 4:
             print(usage)
             return
-        reg = auth.register(args[1], args[2], args[3])
-        print(f"{reg.get("status")} - {reg.get("message")}")
+        reg = auth.register(args[1], args[2], args[3], True)
+        log.con(f"{reg.get("status")} - {reg.get("message")}")
         
 
 def cmd_client(args, state):
@@ -177,7 +177,7 @@ def cmd_client(args, state):
             print(f"No client found: {ip}:{port}")
             return
         target.close()
-        print(f"Kicked {ip}:{port}")
+        log.con(f"Kicked {ip}:{port}")
 
     elif name == "kickall":
         with state["lock"]:
@@ -190,7 +190,7 @@ def cmd_client(args, state):
                     conn.close()
                 except Exception:
                     pass
-        print(f"Kicked {len(conns)} clients")
+        log.con(f"Kicked {len(conns)} clients")
     
 
 
@@ -253,7 +253,7 @@ def cmd_tr(args, state):
         print(f"transaction {args[0]} not found")
         return
     
-    print(f"{tr.get("status")} - {tr.get("message")}")
+    log.con(f"{tr.get("status")} - @{args[1]} - {tr.get("message")}")
 
 def cmd_ip(args, state):
     public_ip = state["p_ip"]
@@ -268,10 +268,10 @@ def cmd_log(args, state):
     
     if name == "clear":
         path = log.clear()
-        print(f"Cleared {path}")
+        log.con(f"Cleared {path}")
 
 def cmd_restart(args, state):
-    print("Restarting...")
+    log.con("Restarting...")
     state["restart"] = True
     state["running"] = False
     state["sock"].close()
@@ -316,7 +316,7 @@ def handle(state):
             except (EOFError, KeyboardInterrupt): print("To stop server, type exit"); continue
             
             if not command: continue
-
+            # log.con(command)
             part = command.strip().split()
             name = part[0].lower()
             args = part[1:]

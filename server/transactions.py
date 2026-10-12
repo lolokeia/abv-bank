@@ -95,15 +95,13 @@ def transfer(user_uuid, recv_login, amount):
     except (ValueError, TypeError):
         return comms.error("Сумма не является числом!", "wrong_amount")
     if amount <= 0:
-        return comms.error("Сумма вывода должна быть больше 0!", "wrong_amount")
-    if amount % 100:
-         return comms.error("Сумма вывода должна быть кратна 100!", "wrong_amount")
+        return comms.error("Сумма перевода должна быть больше 0!", "wrong_amount")
     if not math.isfinite(amount):
          return comms.error("Сумма должна быть конечным числом", "wrong_amount")
 
     
     if amount > sender_balance:
-        return comms.error(f"Сумма больше, чем есть на балансе! Не хватает {amount-sender_balance}Р", "insufficient funds")
+        return comms.error(f"Сумма больше, чем есть на балансе! Не хватает {amount-sender_balance}Р", "insufficient_funds")
 
     new_sender_balance = sender_balance - amount
     db.update_bal(user_uuid, new_sender_balance)
