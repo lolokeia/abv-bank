@@ -52,7 +52,10 @@ def cmd_show_table(args, state):
         print(tabulate(tabu, headers=["Token", "UUID", "Time created", "Expiration time"]))
     elif table == "transactions":
         tabu = db.table_get_tr()
-        print(tabulate(tabu, headers=["ID", "UUID", "Type", "amount", "new balance", "desc", "time"]))
+        print(tabulate(tabu, headers=["ID", "Account UUID", "User UUID", "Type", "amount", "new balance", "desc", "time"]))
+    elif table == "accounts":
+        tabu = db.table_get_accounts()
+        print(tabulate(tabu, headers=["Account UUID", "Account number", "Owner UUID", "Name", "Currency", "Balance", "Frozen", "Time created"]))
     else: print("table not found"); return
 
 
@@ -131,14 +134,14 @@ def cmd_user(args, state):
         usure = input("Are you sure? Yes/No: ")
         if usure.lower() == "yes":
             db.delete_user(args[1])
-            print("sucсessful")
+            log.con(f"user {args[1]} delete sucсessful")
         else: print("cancelled")
     elif name == "create":
         if len(args) < 4:
             print(usage)
             return
         reg = auth.register(args[1], args[2], args[3], True)
-        log.con(f"{reg.get("status")} - {reg.get("message")}")
+        log.con(f"{reg.get("status")} - {reg.get("code")}")
         
 
 def cmd_client(args, state):
@@ -204,56 +207,56 @@ def cmd_state(args, state):
 
 
 def cmd_tr(args, state):
-    usage = "Usage: tr deposit <login> <amount>|withdraw <login> <amount>|payment <login> <amount>|set <login> <balance>|transfer <login-from> <login-to> <amount>"
+    usage = "Usage: tr deposit <acc number> <amount>|withdraw <acc number> <amount>|payment <acc number> <amount>|set <acc number> <balance>|transfer <acc number-from> <acc number-to> <amount>"
     if len(args) < 2:
         print(usage)
         return
     name = args[0].lower()
 
     
-    user_uuid = db.get_user_by_login(args[1])
-    if not user_uuid:
-        print(f"User with login {args[1]} not found")
+    acc_uuid = db.get_uuid_by_num(args[1])
+    if not acc_uuid:
+        print(f"account {args[1]} not found")
         return
 
     if name == "deposit":
         if len(args) < 3:
             print(usage)
             return
-        tr = transactions.deposit(user_uuid, args[2])
+        tr = transactions.deposit(acc_uuid, args[2])
     elif name == "withdraw":
         if len(args) < 3:
             print(usage)
             return
-        tr = transactions.withdraw(user_uuid, args[2])
+        tr = transactions.withdraw(acc_uuid, args[2])
     elif name == "payment":
         if len(args) >= 3:
-            tr = transactions.payment(user_uuid, args[2])
+            tr = transactions.payment(acc_uuid, args[2])
         else:
-            tr = transactions.payment(user_uuid)
+            tr = transactions.payment(acc_uuid)
     elif name == "transfer":
         if len(args) < 4:
                 print(usage)
                 return
-        tr = transactions.transfer(user_uuid, args[2], args[3])
+        tr = transactions.transfer(acc_uuid, args[2], args[3])
 
     elif name == "set":
         usure = input("Are you sure? Yes/No: ")
         try:
             new_balance = float(args[2])
         except ValueError:
-            tr = {"status": "error", "message": f"amount must be a number"}
-            print(f"{tr.get("status")} - {tr.get("message")}")
+            tr = {"status": "error", "code": f"amount.not_digit"}
+            print(f"{tr.get("status")} - {tr.get("code")}")
             return
         if usure.lower() == "yes":
-            db.unsafe_set_balance_admin(user_uuid, new_balance)
-            tr = {"status": "ok", "message": f"set balance for {args[1]} to {args[2]}"}
-        else: tr = {"status": "error", "message": f"cancelled"}; print(f"{tr.get("status")} - {tr.get("message")}"); return
+            db.unsafe_set_balance_admin(acc_uuid, new_balance)
+            tr = {"status": "ok"}
+        else: tr = {"status": "error", "code": f"cmd.cancelled"}; print(f"{tr.get("status")} - {tr.get("message")}"); return
     else:
         print(f"transaction {args[0]} not found")
         return
     
-    log.con(f"{tr.get("status")} - @{args[1]} - {tr.get("message")}")
+    log.con(f"{tr.get("status")} - @{args[1]} - {tr.get("code")}")
 
 def cmd_ip(args, state):
     public_ip = state["p_ip"]
@@ -307,23 +310,27 @@ DESC = {
     "ip": "copy ip to clipboard"
 }
 
-
 def handle(state):
+    running = state["running"]
     with patch_stdout(raw=True):
-        while state["running"]:
+        while running:
             try:
-                command = session.prompt("abv-bank > ")
-            except (EOFError, KeyboardInterrupt): print("To stop server, type exit"); continue
-            
-            if not command: continue
-            # log.con(command)
-            part = command.strip().split()
-            name = part[0].lower()
-            args = part[1:]
-            cmd = COMMANDS.get(name)
-            if cmd is None:
-                print(f"Unknown command: {name}")
-                continue
-            cmd(args, state)
+                try:
+                    command = session.prompt("abv-bank > ")
+                except (EOFError, KeyboardInterrupt): print("To stop server, type exit"); continue
+                
+                if not command: continue
+                log.cmd(command)
+                part = command.strip().split()
+                name = part[0].lower()
+                args = part[1:]
+                cmd = COMMANDS.get(name)
+                if cmd is None:
+                    print(f"Unknown command: {name}")
+                    continue
+                cmd(args, state)
+                running = state["running"]
+            except Exception as e:
+                log.crit(f"[cmd_thread]: {e}")
+    exit(0)
 
-        

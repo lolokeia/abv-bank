@@ -1,25 +1,33 @@
-from server import auth, db, tokens, transactions, cmd_handle
-from shared import comms, protocol, log, collibry
-from config import HOST, DB_PATH, PORT, API_VERSION
-import socket
-import threading
-import time
-import os
-import sys
+try:
+    from server import auth, db, tokens, transactions, cmd_handle, luhn
+    from shared import comms, protocol, log, collibry, codes
+    from config import HOST, DB_PATH, PORT, API_VERSION
+    import socket
+    import threading
+    import time
+    import os
+    import sys
+except Exception as e:
+    print(f"cannot start server: {e}")
+    exit(1)
 
 state = {
     "sock": None,
     "running": True,
     "restart": False,
-    "debug": False,
+    "debug": True,
     "clients": {},
     "lock": threading.Lock(),
     "requests_total": 0,
     "start_time": time.monotonic(),
     "uptime": 0,
-    "api_ver": 9,
+    "api_ver": 10,
     "p_ip": ""
 }
+
+def run_after_start():
+    x = 1
+
 
 def handle(request):
     try:
@@ -32,7 +40,7 @@ def handle(request):
         data = request.get("data", {})
 
         if action is None:
-            return comms.error("bad request", "bad_request")
+            return comms.error(codes.BAD_REQUEST)
 
         if action == "register":
             login = data["login"]
@@ -49,43 +57,59 @@ def handle(request):
 
         
         token = request.get("token")
+
         user_uuid = tokens.resolve(token)
         if not user_uuid:
-            return comms.error("Сессия истекла или недействительна", "session_expired")
+            return comms.error(codes.SESSION_EXPIRED)
+        
+        ACC_ACTIONS = {"get_balance", "deposit", "withdraw", "payment", "transfer", "burn"}
+
+        acc_uuid = None
+        if action in ACC_ACTIONS:
+            acc_num = data.get("acc_num")
+            acc_uuid = db.get_uuid_by_num(acc_num) if acc_num else None
+            if acc_uuid is None:
+                return comms.error(codes.USER_NOT_FOUND)
+            if db.get_user_by_acc_uuid(acc_uuid) != user_uuid:
+                return comms.error(codes.USER_NOT_FOUND)
 
 
         if action == "logout":
             tokens.revoke(token)
-            return comms.ok("Выход выполнен")
+            return comms.ok()
 
+        elif action == "get_accounts":
+            accounts = transactions.get_accounts(user_uuid)
+            return accounts
+        
         elif action == "get_balance":
-            balance = transactions.get_balance(user_uuid)
+            balance = transactions.get_balance(acc_uuid)
             return balance
         
         elif action == "deposit":
             amount = data["amount"]
-            deposit = transactions.deposit(user_uuid, amount)
+            deposit = transactions.deposit(acc_uuid, amount)
             return deposit
         
         elif action == "withdraw":
             amount = data["amount"]
-            withdraw = transactions.withdraw(user_uuid, amount)
+            withdraw = transactions.withdraw(acc_uuid, amount)
             return withdraw
 
         elif action == "payment":
             amount = data.get("amount")
-            payment = transactions.payment(user_uuid, amount)
+            payment = transactions.payment(acc_uuid, amount)
             return payment
         
         elif action == "transfer":
             amount = data["amount"]
-            recv_login = data["recv_login"]
-            transfer = transactions.transfer(user_uuid, recv_login, amount)
+            recv_num = data["recv_num"]
+            transfer = transactions.transfer(acc_uuid, recv_num, amount)
             return transfer
 
         elif action == "burn":
             pin = data["pin"]
-            burn = transactions.burn(user_uuid, pin)
+            burn = transactions.burn(acc_uuid, pin)
             return burn
         
         elif action == "get_history":
@@ -111,12 +135,12 @@ def handle(request):
             return change_login
 
         else:
-            return comms.error("Неверный запрос", "bad_request")
+            return comms.error(codes.ACTION_UNKNOWN)
 
             
     except Exception as e:
         log.error(f"Error handling request: {e}")
-        return comms.error(f"Возникла внутренняя ошибка при обработке запроса", "internal_error")
+        return comms.error(codes.SERVER_ERROR)
 
 
 clients = state["clients"]
@@ -147,6 +171,7 @@ def client_handle(conn, addr):
         conn.close()
         with clients_lock:
             clients.pop(conn, None)
+
 
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -188,6 +213,7 @@ def main():
         state["p_ip"] = public_ip() + ":" + str(PORT)
         log.info(f"To see all supported commands, type HELP")
         threading.Thread(target=cmd_handle.handle, args=(state,), daemon=True).start()
+        run_after_start()
 
         while state["running"]:
             try:

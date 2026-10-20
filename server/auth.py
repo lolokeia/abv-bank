@@ -1,5 +1,5 @@
 from server import db, tokens
-from shared import comms
+from shared import comms, codes
 import bcrypt
 import re
 
@@ -26,45 +26,48 @@ def check_pin(pin: str, stored_hash: str) -> bool:
 def register(login, name, pin_input, name_bypass=False):
     """Регистрирует пользователя, проверяет правила и обращается к БД."""
     if pin_input is None: 
-        return comms.error("Пин не введен", "pin_is_empty")
+        return comms.error(codes.PIN_EMPTY)
 
     if len(pin_input) != 4:
-         return comms.error("Пин может состоять только из 4 цифр", "invalid_pin")
+         return comms.error(codes.PIN_LENGTH)
 
     if isdigit(pin_input) is False:
-        return comms.error("Пин должен состоять из цифр!", "invalid_pin")
+        return comms.error(codes.PIN_CHAR)
     
     if not login.strip(): # проверки на наличие ввода
-        return comms.error("Логин не может быть пустым", "login_is_empty")
+        return comms.error(codes.LOGIN_EMPTY)
     
     if not name.strip():
-        return comms.error("Имя не может быть пустым", "name_is_empty")
+        return comms.error(codes.NAME_EMPTY)
     
     if len(login) > 32 or len(name) > 32:
-        return comms.error("Логин или имя превышают лимит символов в 32 символа", "login_exceeds_32")
+        return comms.error(codes.LOGIN_LENGTH)
 
     if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\-]+$", login):
-        return comms.error("В логине разрешены только буквы А-Я, A-Z, и цифры 0-9, а так же _ и -", "invalid_login")
+        return comms.error(codes.LOGIN_CHAR)
 
     if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\-]+$", name):
-        return comms.error("В логине разрешены только буквы А-Я, A-Z, и цифры 0-9, а так же _ и -", "invalid_name")
+        return comms.error(codes.NAME_CHAR)
     
     clean_login = login.strip().lower()
 
     if clean_login in BANNED_LOGINS and name_bypass == False:
-        return comms.error("Логин запрещен для регистрации", "banned_login")
+        return comms.error(codes.LOGIN_FORBIDDEN)
     
     if db.get_user_by_login(login) is not None:
-        return comms.error("Такой логин уже занят", "login_taken")
+        return comms.error(codes.LOGIN_TAKEN)
     
     pin_hash = hash_pin(pin_input)
     user_uuid = db.create_user(login, name, pin_hash)
 
     if user_uuid is None:
-            return comms.error("Ошибка при создании пользователя", "user_cannot_be_created")
+            return comms.error(codes.USER_CANNOT_CREATE)
+
+    account = db.create_account(user_uuid, "Счет по-умолчанию", "RUB")
+
 
     token = db.create_token(user_uuid)
-    return comms.ok(f"Регистрация успешна, {name}.", {"login": login, "name": name, "token": token})
+    return comms.ok(data={"token": token, "account": account, "name": name})
 
 
 
@@ -74,56 +77,71 @@ def login(login_input, pin_input):
     user_uuid = db.get_user_by_login(login_input)
 
     if user_uuid is None:
-        return comms.error("Пользователя не существует", "user_not_exists")
+        return comms.error(codes.USER_NOT_FOUND)
     
     if pin_input is None:
-        return comms.error("Пин не может быть пустым", "pin_is_empty")
+        return comms.error(codes.PIN_EMPTY)
     
     pin_hash = db.get_pin_hash(user_uuid)
     if not check_pin(pin_input, pin_hash):
-         return comms.error("Неправильный пин-код", "wrong_pin")
+         return comms.error(codes.PIN_WRONG)
     
     name = db.get_name_from_id(user_uuid)
 
     token = db.create_token(user_uuid)
 
-    return comms.ok(f"Логин успешен, {name}", {"token": token, "name": name, "login": login_input})
+    return comms.ok(data={"token": token, "name": name, "login": login_input})
 
 
 
 def change_login(user_uuid, new_login):
     """Проверяет возможность смены логина, отправляет новый логин в БД"""
     if not new_login:
-         return comms.error("Логин не может быть пустым", "login_is_empty")
+         return comms.error(codes.LOGIN_EMPTY)
     if db.get_user_by_login(new_login) is not None:
-        return comms.error("Логин уже занят", "login_taken")
+        return comms.error(codes.LOGIN_TAKEN)
+    
+    if not new_login.strip(): # проверки на наличие ввода
+        return comms.error(codes.LOGIN_EMPTY)
+        
+
+        
     if len(new_login) > 32:
-                return comms.error("Логин превышает лимит символов в 32 символа", "login_exceeds_32")
+        return comms.error(codes.LOGIN_LENGTH)
+    
+    if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\-]+$", new_login):
+        return comms.error(codes.LOGIN_CHAR)
+    
+        
     db.update_login(user_uuid, new_login)
-    return comms.ok(f"Логин успешно изменен на @{new_login}")
+    return comms.ok(data={})
 
 
 
 def change_pin(user_uuid, old_pin, new_pin):
     """Проверяет возможность смены пина, отправляет новый пин в БД"""
     if not old_pin:
-        return comms.error("Старый пин не может быть пустым", "pin_is_empty")
+        return comms.error(codes.PIN_EMPTY)
     pin_hash = db.get_pin_hash(user_uuid)
     if not check_pin(old_pin, pin_hash):
-        return comms.error("Старый пин неверен", "wrong_pin")
+        return comms.error(codes.PIN_WRONG)
     if len(new_pin) != 4:
-        return comms.error("Пин должен состоять из 4 цифр", "invalid_pin")
+        return comms.error(codes.PIN_LENGTH)
+    if isdigit(new_pin) is False:
+        return comms.error(codes.PIN_CHAR)
     new_hash = hash_pin(new_pin)
     db.update_pin_hash(user_uuid, new_hash)
     tokens.revoke_all(user_uuid)
-    return comms.ok(f"Пин успешно изменен, вам придется перезайти")
+    return comms.ok()
 
 
 
 def change_name(user_uuid, new_name):
     if not new_name:
-        return comms.error("Новое имя не может быть пустым!", "name_is_empty")
+        return comms.error(codes.NAME_EMPTY)
     if len(new_name) > 32:
-            return comms.error("Имя превышает лимит символов в 32 символа", "login_exceeds_32")
+            return comms.error(codes.LOGIN_LENGTH)
+    if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\-]+$", new_name):
+        return comms.error(codes.NAME_CHAR)
     db.update_name(user_uuid, new_name)
-    return comms.ok(f"Имя успешно изменено на {new_name}")
+    return comms.ok()

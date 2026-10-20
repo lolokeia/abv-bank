@@ -37,6 +37,9 @@ def recv_message(sock):
     if header is None:
         return None
     length = struct.unpack(">I", header)[0]
+    MAX_MESSAGE = 1024 * 1024
+    if length > MAX_MESSAGE:
+        raise ValueError("message too large")
     body = _recv_exact(sock, length)
     if body is None:
         return None

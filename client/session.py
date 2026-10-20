@@ -5,5 +5,10 @@ state = {
     'login': None,
     'name': None,
     'pin': None,
-    'balance': None,}
+    'accounts': {},
+    'current_acc': None,
+    'last_error': None,
+    'lang': {},
+    'conn_tries': 0
+    }
 

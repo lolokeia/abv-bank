@@ -4,4 +4,4 @@ DB_PATH = "bank.db"
 TOKEN_EXPIRE_MINUTES = 5
 LOG_PATH = "latest.log"
 
-API_VERSION = 9
+API_VERSION = 10 # updated balance - now int instead of float

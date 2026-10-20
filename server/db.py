@@ -1,9 +1,15 @@
 import sqlite3
 import uuid
 import secrets
+from server import luhn
 from datetime import datetime, timedelta, timezone
 from config import TOKEN_EXPIRE_MINUTES
 import threading
+import random
+
+import time
+from shared import collibry
+
 db_lock = threading.Lock()
 
 connection = None
@@ -25,13 +31,27 @@ def connect(path):
 def init():
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS Users (
-    uuid TEXT PRIMARY KEY,
+    uuid TEXT PRIMARY KEY UNIQUE,
     login TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
-    balance REAL,
     pin_hash TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    role TEXT DEFAULT 'user'
+    role TEXT DEFAULT 'user',
+    has_premium TEXT DEFAULT '0'
+    )
+    ''')
+
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS Accounts (
+        acc_uuid TEXT PRIMARY KEY UNIQUE NOT NULL,
+        acc_num TEXT UNIQUE NOT NULL,
+        owner_uuid TEXT NOT NULL,
+        name TEXT NOT NULL,
+        currency TEXT NOT NULL,
+        balance INTEGER NOT NULL,
+        is_frozen INTEGER NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (owner_uuid) REFERENCES Users(uuid)
     )
     ''')
 
@@ -39,12 +59,14 @@ def init():
     CREATE TABLE IF NOT EXISTS Transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_uuid TEXT NOT NULL,
+        acc_uuid TEXT NOT NULL,
         type TEXT NOT NULL,
-        amount REAL NOT NULL,
-        balance_after REAL NOT NULL,
+        amount INTEGER NOT NULL,
+        balance_after INTEGER NOT NULL,
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_uuid) REFERENCES Users(uuid)
+        FOREIGN KEY (acc_uuid) REFERENCES Accounts(acc_uuid)
     )
     ''')
 
@@ -60,23 +82,20 @@ def init():
 
 def create_user(login, name, pin_hash):
     usr_uuid = str(uuid.uuid4())
-    bal = 0
     cursor.execute("SELECT 1 FROM Users WHERE login = ?", (login,))
     if cursor.fetchone():
         return None
             
-    cursor.execute("""INSERT INTO Users (uuid, login, name, pin_hash, balance)
-    VALUES (?, ?, ?, ?, ?)""", (usr_uuid, login, name, pin_hash, bal))
+    cursor.execute("""INSERT INTO Users (uuid, login, name, pin_hash)
+    VALUES (?, ?, ?, ?)""", (usr_uuid, login, name, pin_hash))
     connection.commit()
     return usr_uuid
-
-
 
 
 # Получение данных
 
 def get_user(user_uuid):
-    cursor.execute("SELECT uuid, login, name, balance, created_at, role FROM Users WHERE uuid = ?", (user_uuid,))
+    cursor.execute("SELECT uuid, login, name, created_at, role FROM Users WHERE uuid = ?", (user_uuid,))
     return cursor.fetchone() 
 
 
@@ -90,13 +109,6 @@ def get_name_from_id(user_uuid):
     cursor.execute("SELECT name FROM Users WHERE uuid = ?", (user_uuid,))
     row = cursor.fetchone()
     return row[0] if row else "Пользователь"
-
-
-
-def get_bal(user_uuid):
-    cursor.execute("SELECT balance FROM Users WHERE uuid = ?", (user_uuid,))
-    row = cursor.fetchone()
-    return row[0] if row else 0
 
 
 def get_users_count():
@@ -118,13 +130,44 @@ def get_login_by_uuid(user_uuid):
 
 def get_role_by_uuid(user_uuid):
     cursor.execute("SELECT role FROM Users WHERE uuid = ?", (user_uuid,))
-    return cursor.fetchone() 
+    return cursor.fetchone()
 
- # Обновление данных
+def get_premium_by_uuid(user_uuid):
+    cursor.execute("SELECT has_premium FROM Users WHERE uuid = ?", (user_uuid,))
+    has_premium = cursor.fetchone()
+    if not has_premium:
+        return False
+    if has_premium[0] == "1":
+        return True
+    else:
+        return False
 
-def update_bal(user_uuid, new_bal):
-    cursor.execute("UPDATE Users SET balance = ? WHERE uuid = ?", (new_bal, user_uuid))
+def grant_premium(user_uuid, premium=True):
+    if premium:
+        has = 1
+    else: has = 0
+
+    cursor.execute("UPDATE Users SET has_premium = ? WHERE uuid = ?", (has, user_uuid,))
     connection.commit()
+
+def get_freeze_by_acc_uuid(acc_uuid):
+    cursor.execute("SELECT is_frozen FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
+    frozen = cursor.fetchone()
+    if not frozen:
+        return False
+    if frozen[0] == 1:
+        return True
+    else:
+        return False
+
+def set_freeze_acc(acc_uuid, freeze=True):
+    if freeze:
+        has = 1
+    else: has = 0
+    
+    cursor.execute("UPDATE Accounts SET is_frozen = ? WHERE acc_uuid = ?", (has, acc_uuid,))
+    connection.commit()
+ # Обновление данных
 
 
 def update_name(user_uuid, new_name):
@@ -148,9 +191,9 @@ def update_pin_hash(user_uuid, new_pin_hash):
 
 # транзакции
 
-def tr_add(user_uuid, type, amount, balance_after, description):
-    cursor.execute("""INSERT INTO Transactions (user_uuid, type, amount, balance_after, description)
-    VALUES (?, ?, ?, ?, ?)""", (user_uuid, type, amount, balance_after, description))
+def tr_add(user_uuid, acc_uuid, type, amount, balance_after, description):
+    cursor.execute("""INSERT INTO Transactions (user_uuid, acc_uuid, type, amount, balance_after, description)
+    VALUES (?, ?, ?, ?, ?, ?)""", (user_uuid, acc_uuid, type, amount, balance_after, description))
     connection.commit()
     return cursor.lastrowid
 
@@ -186,6 +229,7 @@ def tr_rollback():
 def delete_user(user_uuid):
     cursor.execute("DELETE FROM Transactions WHERE user_uuid = ?", (user_uuid,))
     cursor.execute("DELETE FROM Tokens WHERE uuid = ?", (user_uuid,))
+    cursor.execute("DELETE FROM Accounts WHERE owner_uuid = ?", (user_uuid,))
     cursor.execute("DELETE FROM Users WHERE uuid = ?", (user_uuid,))
     connection.commit()
 
@@ -233,7 +277,7 @@ def remove_expired_tokens(now_str):
 
 
 def table_get_users():
-    cursor.execute("SELECT uuid, login, name, balance, created_at, role FROM Users")
+    cursor.execute("SELECT uuid, login, name, created_at, role FROM Users")
     return cursor.fetchall()
 
 
@@ -246,13 +290,78 @@ def table_get_tokens():
     cursor.execute("SELECT * FROM Tokens")
     return cursor.fetchall()
 
+def table_get_accounts():
+    cursor.execute("SELECT * FROM Accounts")
+    return cursor.fetchall()
 
-def unsafe_set_balance_admin(user_uuid, amount):
-    old_bal = get_bal(user_uuid)
-    cursor.execute("UPDATE Users SET balance = ? WHERE uuid = ?", (amount, user_uuid))
-    bal = get_bal(user_uuid)
-    tr_add(user_uuid, "set", bal - old_bal, amount, "Установлено администратором")
+
+def unsafe_set_balance_admin(acc_uuid, amount):
+    user_uuid = get_user_by_acc_uuid(acc_uuid)
+    old_bal = get_bal(acc_uuid)
+    cursor.execute("UPDATE Accounts SET balance = ? WHERE acc_uuid = ?", (amount, acc_uuid))
+    bal = get_bal(acc_uuid)
+    tr_add(user_uuid, acc_uuid, "set", bal - old_bal, amount, "Установлено администратором")
     connection.commit()
+
+
+
+
+
+
+# Счета
+
+
+
+
+def update_bal(acc_uuid, new_bal):
+    cursor.execute("UPDATE Accounts SET balance = ? WHERE acc_uuid = ?", (new_bal, acc_uuid))
+    connection.commit()
+
+def get_bal(acc_uuid):
+    cursor.execute("SELECT balance FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
+    row = cursor.fetchone()
+    return row[0] if row else 0
+
+def create_account(user_uuid, name, currency):
+    acc_uuid = str(uuid.uuid4())
+    bal = 0
+    num_payload = str(random.randint(1000000, 9999999))
+    checksum = luhn.checksum_create(num_payload)
+
+    acc_num = str(num_payload) + str(checksum)
+
+    cursor.execute("INSERT INTO Accounts (acc_uuid, acc_num, owner_uuid, name, currency, balance, is_frozen) VALUES (?, ?, ?, ?, ?, ?, ?)", (acc_uuid, acc_num, user_uuid, name, currency, bal, 0))
+    connection.commit()
+    return acc_uuid
+
+def get_accounts_by_user(user_uuid):
+    cursor.execute("SELECT * FROM Accounts WHERE owner_uuid = ?", (user_uuid,))
+    return cursor.fetchall()
+
+def get_account_by_uuid(acc_uuid):
+    cursor.execute("SELECT * FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
+    row = cursor.fetchone()
+    return row if row else None
+
+def get_account_by_num(acc_num):
+    cursor.execute("SELECT * FROM Accounts WHERE acc_num = ?", (acc_num,))
+    row = cursor.fetchone()
+    return row if row else None
+
+def get_user_by_acc_uuid(acc_uuid):
+    cursor.execute("SELECT owner_uuid FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+def get_num_by_uuid(acc_uuid):
+    cursor.execute("SELECT acc_num FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+def get_uuid_by_num(acc_num):
+    cursor.execute("SELECT acc_uuid FROM Accounts WHERE acc_num = ?", (acc_num,))
+    row = cursor.fetchone()
+    return row[0] if row else None
 
 
 
@@ -267,3 +376,4 @@ def close():
     finally:
         connection = None
         cursor = None
+

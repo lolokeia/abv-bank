@@ -1,5 +1,5 @@
-from server import db, auth
-from shared import comms
+from server import db, auth, luhn
+from shared import comms, codes
 import math
 import random
 
@@ -7,138 +7,158 @@ import random
 
 
 
-def deposit(user_uuid, amount):
-    balance = db.get_bal(user_uuid)
 
+def deposit(acc_uuid, amount):
+    balance = db.get_bal(acc_uuid)
+    user_uuid = db.get_user_by_acc_uuid(acc_uuid)
     try:
-        amount = float(amount)
+        amount = int(amount)
     except (ValueError, TypeError):
-        return comms.error("Сумма не является числом!", "wrong_amount")
+        return comms.error(codes.AMOUNT_NOT_DIGIT)
     if amount <= 0:
-        return comms.error("Сумма пополнения должна быть больше 0!", "wrong_amount")
-    if not math.isfinite(amount):
-        return comms.error("Сумма должна быть конечным числом", "wrong_amount")
+        return comms.error(codes.AMOUNT_NEGATIVE)
     
     new_balance = balance + amount
-    db.update_bal(user_uuid, new_balance)
-    db.tr_add(user_uuid, "deposit", amount, new_balance, "Пополнение баланса")
-    return comms.ok(f"Пополнение на {amount}Р, баланс: {new_balance}", {"new_balance": new_balance})
+    db.update_bal(acc_uuid, new_balance)
+    db.tr_add(user_uuid, acc_uuid, "deposit", amount, new_balance, "Пополнение баланса")
+    return comms.ok(data={"new_balance": new_balance})
 
 
 
 
 
-def withdraw(user_uuid, amount):
-    balance = db.get_bal(user_uuid)
+def withdraw(acc_uuid, amount):
+    balance = db.get_bal(acc_uuid)
+    user_uuid = db.get_user_by_acc_uuid(acc_uuid)
 
     try:
-        amount = float(amount)
+        amount = int(amount)
     except (ValueError, TypeError):
-        return comms.error("Сумма не является числом!", "wrong_amount")
+        return comms.error(codes.AMOUNT_NOT_DIGIT)
     if amount <= 0:
-        return comms.error("Сумма вывода должна быть больше 0!", "wrong_amount")
+        return comms.error(codes.AMOUNT_NEGATIVE)
     if amount % 100:
-        return comms.error("Сумма вывода должна быть кратна 100!", "wrong_amount")
-    if not math.isfinite(amount):
-        return comms.error("Сумма должна быть конечным числом", "wrong_amount")
+        return comms.error(codes.AMOUNT_NOT_MUL_100)
     
     if amount > balance:
-        return comms.error(f"Сумма больше, чем есть на балансе! Не хватает {amount-balance}Р", "insufficient_funds")
+        return comms.error(codes.BALANCE_INSUFFICIENT, data={"balance": balance, "amount": amount})
+    
     new_balance = balance - amount
-    db.update_bal(user_uuid, new_balance)
-    db.tr_add(user_uuid, "withdraw", -amount, new_balance, "Снятие наличных")
-    return comms.ok(f"Снятие {amount}Р, баланс: {new_balance}", {"new_balance": new_balance})
+    db.update_bal(acc_uuid, new_balance)
+    db.tr_add(user_uuid, acc_uuid, "withdraw", -amount, new_balance, "Снятие наличных")
+    return comms.ok(data={"new_balance": new_balance})
 
 
 
 
 
-def payment(user_uuid, amount=None):
-    balance = db.get_bal(user_uuid)
+def payment(acc_uuid, amount=None):
+    user_uuid = db.get_user_by_acc_uuid(acc_uuid)
+    balance = db.get_bal(acc_uuid)
+
     if amount is None:
         amount = round(random.uniform(1, balance * 1.5 ), 2)
 
-    try: amount = float(amount)
-    except ValueError: return comms.error("Сумма не является числом, оплата невозможна", "wrong_amount")
+    try: amount = int(amount)
+    except (ValueError, TypeError): return comms.error(codes.AMOUNT_NOT_DIGIT)
 
     if balance <= 0:
-        return comms.error("Ваш баланс нулевой, оплата невозможна", "insufficient funds")
+        return comms.error(codes.BALANCE_NEGATIVE)
     if amount <= 0:
-            return comms.error("Сумма оплаты отрицательна, оплата невозможна", "wrong_amount")
+            return comms.error(codes.AMOUNT_NEGATIVE)
 
     if amount > balance:
-        return comms.error(f"Сумма больше, чем есть на балансе! Не хватает {amount-balance}Р", "insufficient funds")
+        return comms.error(codes.BALANCE_INSUFFICIENT)
+
     new_balance = balance - amount
-    db.update_bal(user_uuid, new_balance)
-    db.tr_add(user_uuid, "payment", -amount, new_balance, "Оплата картой")
-    return comms.ok(f"Оплата на {amount}Р, баланс: {new_balance}", {"new_balance": new_balance})
+    db.update_bal(acc_uuid, new_balance)
+    db.tr_add(user_uuid, acc_uuid, "payment", -amount, new_balance, "Оплата картой")
+    return comms.ok(data={"new_balance": new_balance})
 
 
 
 
 
-def transfer(user_uuid, recv_login, amount):
-    sender_balance = db.get_bal(user_uuid)
-    reciver_uuid = db.get_user_by_login(recv_login)
+def transfer(acc_uuid, recv_num, amount):
 
+    user_uuid = db.get_user_by_acc_uuid(acc_uuid)
+    sender_balance = db.get_bal(acc_uuid)
+
+    if luhn.check_checksum(recv_num) == False:
+        return comms.error(codes.TRANSFER_NUM_WRONG)
+    
+    recv_acc = db.get_uuid_by_num(recv_num)
+
+    reciver_uuid = db.get_user_by_acc_uuid(recv_acc)
     if reciver_uuid is None:
-        return comms.error(f"Получатель '{recv_login}' не найден", "user_not_found")
+        return comms.error(codes.TRANSFER_RECV_NOT_FOUND)
 
-    reciver_balance = db.get_bal(reciver_uuid)
-    sender_login = db.get_login_by_uuid(user_uuid) or "неизвестно"
+
+    recv_login = db.get_login_by_uuid(reciver_uuid)
+    reciver_balance = db.get_bal(recv_acc)
+    sender_login = db.get_login_by_uuid(user_uuid) or "unknown"
 
 
     if user_uuid == reciver_uuid:
-        return comms.error("Вы не можете перевести деньги самому себе!", "self_transfer")
+        return comms.error(codes.TRANSFER_SELF)
     try:
-        amount = float(amount)
+        amount = int(amount)
     except (ValueError, TypeError):
-        return comms.error("Сумма не является числом!", "wrong_amount")
+        return comms.error(codes.AMOUNT_NOT_DIGIT)
     if amount <= 0:
-        return comms.error("Сумма перевода должна быть больше 0!", "wrong_amount")
-    if not math.isfinite(amount):
-         return comms.error("Сумма должна быть конечным числом", "wrong_amount")
+        return comms.error(codes.AMOUNT_NEGATIVE)
 
     
     if amount > sender_balance:
-        return comms.error(f"Сумма больше, чем есть на балансе! Не хватает {amount-sender_balance}Р", "insufficient_funds")
+        return comms.error(codes.BALANCE_INSUFFICIENT)
 
     new_sender_balance = sender_balance - amount
-    db.update_bal(user_uuid, new_sender_balance)
-    db.tr_add(user_uuid, "transfer_send", -amount, new_sender_balance, f"Отправлено {recv_login}")
+    db.update_bal(acc_uuid, new_sender_balance)
+    db.tr_add(user_uuid, acc_uuid, "transfer_send", -amount, new_sender_balance, f"Отправлено {recv_login}")
 
     new_reciver_balance = reciver_balance + amount
-    db.update_bal(reciver_uuid, new_reciver_balance)
-    db.tr_add(reciver_uuid, "transfer_recv", amount, new_reciver_balance, f"Получено от {sender_login}")
-    return comms.ok(f"Отправлено {amount}Р на баланс {recv_login}, баланс: {new_sender_balance}")
+    db.update_bal(recv_acc, new_reciver_balance)
+    db.tr_add(reciver_uuid, recv_acc, "transfer_recv", amount, new_reciver_balance, f"Получено от {sender_login}")
+    return comms.ok(data={"new_balance": new_sender_balance})
 
 
-def burn(user_uuid, pin_input):
+def burn(acc_uuid, pin_input):
+    user_uuid = db.get_user_by_acc_uuid(acc_uuid)
     db_hash = db.get_pin_hash(user_uuid)
     if pin_input is None:
-        return comms.error("Пин не введён", "pin_is_empty")
+        return comms.error(codes.PIN_EMPTY)
     if not auth.check_pin(pin_input, db_hash):
-        return comms.error("Неверный пин-код", "wrong_pin")
-    balance = db.get_bal(user_uuid)
-    db.update_bal(user_uuid, 0)
-    db.tr_add(user_uuid, "burn", -balance, 0, "Сжигание")
-    return comms.ok("Баланс обнулен", {"new_balance": 0})
+        return comms.error(codes.PIN_WRONG)
+    balance = db.get_bal(acc_uuid)
+    db.update_bal(acc_uuid, 0)
+    db.tr_add(user_uuid, acc_uuid, "burn", -balance, 0, "Сжигание")
+    return comms.ok(data={"new_balance": 0})
 
-def get_balance(user_uuid):
-    if user_uuid is None:
-        return comms.error("Пользователь не найден", "user_not_found")
-    bal = db.get_bal(user_uuid)
+def get_balance(acc_uuid):
+    if acc_uuid is None:
+        return comms.error(codes.USER_NOT_FOUND)
+    bal = db.get_bal(acc_uuid)
     if bal is None:
-        return comms.error("Пользователя не существует", "user_not_exists")
-    return comms.ok(f"Баланс: {bal}", {"balance": bal})
+        return comms.error(codes.USER_NOT_FOUND)
+    
+    return comms.ok(data={"balance": bal})
+
+def get_accounts(user_uuid):
+    if user_uuid is None:
+        return comms.error(codes.USER_NOT_FOUND)
+    acc = db.get_accounts_by_user(user_uuid)
+    if acc is None:
+        return comms.error(codes.USER_NOT_FOUND)
+    
+    return comms.ok(data={"accounts": acc})
 
 
 def get_history(user_uuid, get_recent: bool):
     if not user_uuid:
-        return comms.error("Пользователь не найден", "user_not_found")
+        return comms.error(codes.USER_NOT_FOUND)
     if get_recent == True:
         transactions = db.tr_get_recent(user_uuid, 10)
-        return comms.ok("история последних 10 операций: ",{"transactions": transactions})
+        return comms.ok(data={"history": transactions, "recent": True})
     else:
         transactions = db.tr_get_all(user_uuid)
-        return comms.ok("история операций: ",{ "transactions": transactions})
+        return comms.ok(data={"history": transactions, "recent": False})

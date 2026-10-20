@@ -9,20 +9,22 @@ def datetime_now():
 def time_now():
     return datetime.now().strftime('%H:%M:%S')
 
-def _log(level, color, msg, fullcoltext=False):
+def _log(level, color, msg, fullcoltext=False, print_cmd=True):
     with open(LOG_PATH, "a", encoding="utf-8") as f:
         f.write(f"{datetime_now()} | [{level}] - {msg}\n")
-    
-    if fullcoltext:
-        print(f"{collibry.BRIGHT_BLACK}{time_now()}{collibry.RESET} | {color}[{level}] - {msg}{collibry.RESET}")
-    else:
-        print(f"{collibry.BRIGHT_BLACK}{time_now()}{collibry.RESET} | {color}[{level}]{collibry.RESET} - {msg}")
+
+    if print_cmd:
+        if fullcoltext:
+            print(f"{collibry.BRIGHT_BLACK}{time_now()}{collibry.RESET} | {color}[{level}] - {msg}{collibry.RESET}")
+        else:
+            print(f"{collibry.BRIGHT_BLACK}{time_now()}{collibry.RESET} | {color}[{level}]{collibry.RESET} - {msg}")
 
 def error(msg): _log("ERROR", collibry.BOLD + collibry.RED, msg, True)
 def warn(msg):  _log("WARN", collibry.YELLOW, msg)
 def info(msg):  _log("INFO", collibry.GREEN, msg)
 def crit(msg):  _log("CRITICAL", collibry.BOLD + collibry.BG_RED, msg, True)
-def con(msg): _log("con", collibry.BG_BRIGHT_BLACK, msg)
+def con(msg): _log("CONSOLE", collibry.BG_BRIGHT_BLACK, msg)
+def cmd(msg): _log("CMD", collibry.BG_BRIGHT_BLACK, msg, print_cmd=False)
 
 logo_art = """
  █████╗ ██████╗ ██╗   ██╗    ██████╗  █████╗ ███╗   ██╗██╗  ██╗
