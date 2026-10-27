@@ -36,6 +36,7 @@
 
     "connection.reset": "Соединение сброшено",
     "connection.no": "Нет соединения с сервером!",
+    "connection.error": "Ошибка соединения с сервером",
 
 
     "client.error": "Ошибка",
@@ -43,7 +44,7 @@
     "client.connecting" : "Подключение...",
     "client.long_connection": "Проверьте подключение к сети и статус сервера",
     "client.tries": "попытка №",
-
+    "client.exit": "Выйти",
     "login.main": "Войдите",
     "login.login_entry": "Логин",
     "login.pin_entry": "ПИН-код",

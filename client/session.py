@@ -1,6 +1,10 @@
+import threading
+
 state = {
     'running': True,
+    'conn': False,
     'sock': None,
+    'sock_lock': threading.Lock(),
     'token': None,
     'login': None,
     'name': None,

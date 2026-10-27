@@ -55,6 +55,9 @@ def handle(request):
             login_status = auth.login(login, pin)
             return login_status
 
+        elif action == "ping":
+            return comms.ok(data={"pong": True})
+
         
         token = request.get("token")
 
@@ -235,6 +238,8 @@ def main():
         db.close()
         if state.get("restart"):
             log.info("Restarting...")
+            if state["sock"]:
+                state["sock"].close()
             os.execv(sys.executable, [sys.executable] + sys.argv)
         else:
             if state["sock"]:

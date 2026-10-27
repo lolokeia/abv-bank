@@ -3,10 +3,33 @@ from server import db, transactions, auth, tokens
 from shared import log
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
-import time
+import time, sys, os
 import pyperclip
 
 session = PromptSession()
+
+
+def restore_terminal_mode():
+    """Принудительно возвращает терминал в нормальный режим (cooked mode)"""
+    if sys.platform == "win32":
+        import ctypes
+        from ctypes import wintypes
+
+        # Константы Windows Console Modes
+        STD_INPUT_HANDLE = -10
+        # Стандартные флаги Windows для нормального ввода (cooked mode):
+        # ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_INSERT_MODE
+        DEFAULT_INPUT_MODE = 0x0001 | 0x0002 | 0x0004 | 0x0020 
+
+        kernel32 = ctypes.windll.kernel32
+        h_stdin = kernel32.GetStdHandle(STD_INPUT_HANDLE)
+        
+        if h_stdin != wintypes.HANDLE(-1).value:
+            # Принудительно накатываем дефолтный режим ввода Windows консоли
+            kernel32.SetConsoleMode(h_stdin, DEFAULT_INPUT_MODE)
+    else:
+        # Для Linux/Debian возвращаем старый добрый stty
+        os.system("stty sane")
 
 def format_uptime(seconds):
     seconds = int(seconds)
@@ -317,7 +340,8 @@ def handle(state):
             try:
                 try:
                     command = session.prompt("abv-bank > ")
-                except (EOFError, KeyboardInterrupt): print("To stop server, type exit"); continue
+                except EOFError: print("Closing..."); break
+                except (KeyboardInterrupt): print("To stop server, type exit"); continue
                 
                 if not command: continue
                 log.cmd(command)
@@ -332,5 +356,6 @@ def handle(state):
                 running = state["running"]
             except Exception as e:
                 log.crit(f"[cmd_thread]: {e}")
-    exit(0)
+    restore_terminal_mode()
+    sys.exit(0)
 

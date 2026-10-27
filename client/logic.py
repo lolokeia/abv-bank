@@ -7,18 +7,32 @@ def _send_n_recv(action, data=None, _retry=True):
     sock = session.state["sock"]
     if sock is None:
         return comms.error(code=codes.CONNECTION_NO)
-    
     req = comms.request(action=action, data=data)
     token = session.state.get('token')
     try:
         if token:
             req['token'] = token
-        protocol.send_message(message=req, sock=session.state["sock"])
+
+        with session.state['sock_lock']:
+            protocol.send_message(message=req, sock=session.state["sock"])
+
+    except (TimeoutError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError):
+            session.state['sock'] = None
+            session.state['conn'] = False
+            return comms.error(code='connection.error', data={"e": e})
+    
     except Exception as e:
         return comms.error(code='send.error', data={"e": e})
     
     try:
-        resp = protocol.recv_message(sock=session.state["sock"])
+        with session.state['sock_lock']:
+            resp = protocol.recv_message(sock=session.state["sock"])
+            
+    except (TimeoutError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError):
+        session.state['sock'] = None
+        session.state['conn'] = False
+        return comms.error(code='connection.error', data={"e": e})
+    
     except Exception as e:
         return comms.error(code='recv.error', data={"e": e})
 
@@ -115,7 +129,13 @@ def format_history(isrecent=True):
     else: 
         return "Ошибка показа истории"
     
-
+def ping():
+    resp = _send_n_recv(action='ping')
+    if resp.get('pong') == True:
+        return True
+    else:
+        return False
+    
 def quiet_relog():
     login_input = session.state['login']
     pin = session.state['pin']
