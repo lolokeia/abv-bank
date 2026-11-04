@@ -1,15 +1,19 @@
-def ok(message, data=None):
+from shared import codes
+def ok(data=None):
     """Успешный ответ."""
-    result = {"status": "ok", "message": message}
+    result = {"status": "ok"}
     if data:
         result["data"] = data
     return result
 
-def error(message, code="error"):
+def error(code=codes.SERVER_ERROR, data=None):
     """Ответ с ошибкой."""
-    return {"status": "error", "code": code, "message": message}
+    result = {"status": "error", "code": code}
+    if data:
+        result["data"] = data
+    return result
 
-def request(action, data=None, token=None):
+def request(action, token=None, data=None):
     result = {"action": action}
     if data:
         result["data"] = data
