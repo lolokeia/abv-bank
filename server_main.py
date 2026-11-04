@@ -15,14 +15,15 @@ state = {
     "sock": None,
     "running": True,
     "restart": False,
-    "debug": True,
+    "debug": False,
     "clients": {},
     "lock": threading.Lock(),
     "requests_total": 0,
     "start_time": time.monotonic(),
     "uptime": 0,
     "api_ver": 10,
-    "p_ip": ""
+    "p_ip": "",
+    "paused": False
 }
 
 def run_after_start():
@@ -35,6 +36,7 @@ def handle(request):
             state["requests_total"] += 1
 
         if state["debug"]: log.info(f"request={request}")
+
         
         action = request.get("action")
         data = request.get("data", {})
@@ -57,6 +59,7 @@ def handle(request):
 
         elif action == "ping":
             return comms.ok(data={"pong": True})
+        
 
         
         token = request.get("token")
@@ -154,6 +157,8 @@ def client_handle(conn, addr):
         with clients_lock:
             clients[conn] = addr
         while True:
+           if state["paused"] == True:
+               conn.close()
            request = protocol.recv_message(conn)
            if not request: break
            response = handle(request)
@@ -220,8 +225,14 @@ def main():
 
         while state["running"]:
             try:
-                conn, addr = sock.accept()
-                log.info(f"Client connected: {addr}")
+                if state['paused'] == False:
+                    conn, addr = sock.accept()
+                    log.info(f"Client connected: {addr}")
+                else:
+                    conn, addr = sock.accept()
+                    conn.close()
+                    log.info("Ignoring client because server is paused")
+                    continue
 
                 threading.Thread(target=client_handle, args=(conn, addr), daemon=True).start()
             except socket.timeout:

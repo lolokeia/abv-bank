@@ -45,8 +45,65 @@
     "client.long_connection": "Проверьте подключение к сети и статус сервера",
     "client.tries": "попытка №",
     "client.exit": "Выйти",
+    "client.loading": "Загрузка...",
+    "client.retry": "Повторить",
+    "client.menu": "На главную",
+    
+    "acc.cantget": "Невозможно получить список счетов, \n или список счетов оказался пустым",
+    "acc.acc": "Счет №",
+
+
     "login.main": "Войдите",
     "login.login_entry": "Логин",
     "login.pin_entry": "ПИН-код",
-    "login.button": "войти"
+    "login.button": "войти",
+    "login.promt": "Уже есть аккаунт? войти",
+
+
+    "register.main": "Регистрация",
+    "register.promt": "Нет аккаунта? зарегестрируйтесь",
+    "register.button": "Заререстрироваться",
+    "register.login_entry": "Логин",
+    "register.pin_entry": "ПИН-код (4 цифры)",
+    "register.name_entry": "Имя",
+
+    "accounts.deposit": "пополнить",
+    "accounts.withdraw": "снять",
+    "accounts.payment": "оплатить",
+    "accounts.transfer": "перевести",
+    "accounts.burn": "сжечь баланс",
+
+    "accounts.create": "создать счет",
+    "accounts.delete": "удалить счет",
+    "accounts.get_history": "история оперций",
+    "accounts.logout": "выйти из аккаунта",
+
+    "accounts.pin": "сменить пин-код",
+    "accounts.login": "сменить логин",
+    "accounts.name": "сменить имя",
+
+
+
+
+
+    "prompt.amount": "сумма",
+
+    "prompt.pin": "пин-код",
+    "prompt.oldpin": "старый пин-код",
+    "prompt.newpin": "новый пин-код",
+
+    "prompt.login": "логин",
+    "prompt.oldlogin": "старый логин",
+    "prompt.newlogin": "новый логин",
+
+    "prompt.acc_from": "снять с",
+    "prompt.acc_to": "отправить на",
+
+    "prompt.recv_acc": "счет получателя",
+
+    "prompt.currency": "валюта",
+
+
+
+    "copy.tooltip": "нажмите для копирования номера счета"
 }

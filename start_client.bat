@@ -1,3 +1,3 @@
 @echo off
 cd /d "%~dp0"
-python.exe start.py
+python.exe client_main.py

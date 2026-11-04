@@ -335,7 +335,7 @@ def create_account(user_uuid, name, currency):
     return acc_uuid
 
 def get_accounts_by_user(user_uuid):
-    cursor.execute("SELECT * FROM Accounts WHERE owner_uuid = ?", (user_uuid,))
+    cursor.execute("SELECT acc_num, name, currency, balance, is_frozen FROM Accounts WHERE owner_uuid = ?", (user_uuid,))
     return cursor.fetchall()
 
 def get_account_by_uuid(acc_uuid):

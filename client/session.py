@@ -13,6 +13,7 @@ state = {
     'current_acc': None,
     'last_error': None,
     'lang': {},
-    'conn_tries': 0
+    'conn_tries': 0,
+    'retry_btn': None,
+    'loading_msg': '',
     }
-

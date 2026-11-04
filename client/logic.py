@@ -16,7 +16,7 @@ def _send_n_recv(action, data=None, _retry=True):
         with session.state['sock_lock']:
             protocol.send_message(message=req, sock=session.state["sock"])
 
-    except (TimeoutError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError):
+    except (TimeoutError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError) as e:
             session.state['sock'] = None
             session.state['conn'] = False
             return comms.error(code='connection.error', data={"e": e})
@@ -28,7 +28,7 @@ def _send_n_recv(action, data=None, _retry=True):
         with session.state['sock_lock']:
             resp = protocol.recv_message(sock=session.state["sock"])
             
-    except (TimeoutError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError):
+    except (TimeoutError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError) as e:
         session.state['sock'] = None
         session.state['conn'] = False
         return comms.error(code='connection.error', data={"e": e})
@@ -36,12 +36,12 @@ def _send_n_recv(action, data=None, _retry=True):
     except Exception as e:
         return comms.error(code='recv.error', data={"e": e})
 
-    
-    if resp.get('code') == codes.SESSION_EXPIRED and _retry:
-        relog = quiet_relog()
-        if relog.get('status') != 'ok':
-            return relog
-        return _send_n_recv(action, data, _retry=False)
+    if resp:
+        if resp.get('code') == codes.SESSION_EXPIRED and _retry:
+            relog = quiet_relog()
+            if relog.get('status') != 'ok':
+                return relog
+            return _send_n_recv(action, data, _retry=False)
     
     return resp
 
@@ -52,7 +52,7 @@ def _send_n_recv(action, data=None, _retry=True):
 
 
 def get_current_acc():
-    return session.state['current_acc']
+    return session.state['current_acc'][0]
 
 # no token required
 def login(login_input, pin_input):
@@ -131,7 +131,7 @@ def format_history(isrecent=True):
     
 def ping():
     resp = _send_n_recv(action='ping')
-    if resp.get('pong') == True:
+    if resp.get('status') == 'ok':
         return True
     else:
         return False

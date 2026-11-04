@@ -3,7 +3,7 @@
 *.sqlite
 *.sqlite3
 
-# Python-кеш
+# Python
 __pycache__/
 *.pyc
 *.pyo

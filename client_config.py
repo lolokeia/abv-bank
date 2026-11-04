@@ -1,3 +1,3 @@
-HOST = "192.168.1.210"
+HOST = "127.0.0.1"
 PORT = 9999
-connectiontimeout = 10
+WATCHDOG_TIMEOUT = 5

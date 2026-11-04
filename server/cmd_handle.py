@@ -8,29 +8,6 @@ import pyperclip
 
 session = PromptSession()
 
-
-def restore_terminal_mode():
-    """Принудительно возвращает терминал в нормальный режим (cooked mode)"""
-    if sys.platform == "win32":
-        import ctypes
-        from ctypes import wintypes
-
-        # Константы Windows Console Modes
-        STD_INPUT_HANDLE = -10
-        # Стандартные флаги Windows для нормального ввода (cooked mode):
-        # ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT | ENABLE_INSERT_MODE
-        DEFAULT_INPUT_MODE = 0x0001 | 0x0002 | 0x0004 | 0x0020 
-
-        kernel32 = ctypes.windll.kernel32
-        h_stdin = kernel32.GetStdHandle(STD_INPUT_HANDLE)
-        
-        if h_stdin != wintypes.HANDLE(-1).value:
-            # Принудительно накатываем дефолтный режим ввода Windows консоли
-            kernel32.SetConsoleMode(h_stdin, DEFAULT_INPUT_MODE)
-    else:
-        # Для Linux/Debian возвращаем старый добрый stty
-        os.system("stty sane")
-
 def format_uptime(seconds):
     seconds = int(seconds)
     days = seconds // 86400
@@ -227,6 +204,7 @@ def cmd_state(args, state):
         
     print("Server Uptime: ", format_uptime(uptime))
     print("Total requests count: ", state["requests_total"])
+    print(f"Is paused: {state['paused']}")
 
 
 def cmd_tr(args, state):
@@ -281,10 +259,23 @@ def cmd_tr(args, state):
     
     log.con(f"{tr.get("status")} - @{args[1]} - {tr.get("code")}")
 
+def cmd_pause(args, state):
+    if state['paused'] == True:
+        state['paused'] = False
+        print("Unpaused server")
+    else:
+        state['paused'] = True
+        print("Paused server")
+
+
 def cmd_ip(args, state):
     public_ip = state["p_ip"]
-    pyperclip.copy(public_ip)
-    print(f"Copied ip-adress to clipboard: {pyperclip.paste()}")
+    try:
+        pyperclip.copy(public_ip)
+        print(f"Copied ip-adress to clipboard: {pyperclip.paste()}")
+    except Exception as e:
+        print("You dont have clipboard app. nothing is copied")
+        print(f"Server public ip: {public_ip}")
 
 def cmd_log(args, state):
     if len(args) < 1:
@@ -297,6 +288,9 @@ def cmd_log(args, state):
         log.con(f"Cleared {path}")
 
 def cmd_restart(args, state):
+    if sys.platform == "win32":
+        print("warning! you are on Windows system, restart will work bad.")
+        print("Restart is working good only in linux")
     log.con("Restarting...")
     state["restart"] = True
     state["running"] = False
@@ -315,7 +309,8 @@ COMMANDS = {
     "restart": cmd_restart,
     "tr": cmd_tr,
     "log": cmd_log,
-    "ip": cmd_ip
+    "ip": cmd_ip,
+    "pause": cmd_pause
 }
 
 DESC = {
@@ -330,7 +325,8 @@ DESC = {
     "restart": "restart server",
     "exit": "stop server",
     "tr": "manage transactions",
-    "ip": "copy ip to clipboard"
+    "ip": "copy ip to clipboard",
+    "pause": "pausing server, it will not send any data to clients until unpaused. state can be seen with STATE command"
 }
 
 def handle(state):
@@ -356,6 +352,5 @@ def handle(state):
                 running = state["running"]
             except Exception as e:
                 log.crit(f"[cmd_thread]: {e}")
-    restore_terminal_mode()
     sys.exit(0)
 
