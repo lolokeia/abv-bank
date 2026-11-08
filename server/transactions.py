@@ -37,7 +37,7 @@ def withdraw(acc_uuid, amount):
         return comms.error(codes.AMOUNT_NOT_DIGIT)
     if amount <= 0:
         return comms.error(codes.AMOUNT_NEGATIVE)
-    if amount % 100:
+    if (amount//100) % 100:
         return comms.error(codes.AMOUNT_NOT_MUL_100)
     
     if amount > balance:
@@ -99,7 +99,7 @@ def transfer(acc_uuid, recv_num, amount):
     sender_login = db.get_login_by_uuid(user_uuid) or "unknown"
 
 
-    if user_uuid == reciver_uuid:
+    if acc_uuid == recv_acc:
         return comms.error(codes.TRANSFER_SELF)
     try:
         amount = int(amount)
