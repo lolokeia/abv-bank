@@ -11,6 +11,7 @@ except Exception as e:
     print(f"cannot start server: {e}")
     exit(1)
 
+log.log_init('latest.log')
 state = {
     "sock": None,
     "running": True,
@@ -58,7 +59,7 @@ def handle(request):
             return login_status
 
         elif action == "ping":
-            return comms.ok(data={"pong": True})
+            return comms.ok()
         
 
         
@@ -220,6 +221,7 @@ def main():
         log.info(f"{DB_PATH} database connected")
         count = tokens.cleanup()
         log.info(f"Cleaned up {count} expired tokens")
+
         public_ip = get_local_ip
         sock = socket.create_server((HOST, PORT))
         state["sock"] = sock
