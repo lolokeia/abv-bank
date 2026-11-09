@@ -39,6 +39,8 @@ def register(login, name, pin_input, name_bypass=False):
     
     if not name.strip():
         return comms.error(codes.NAME_EMPTY)
+
+    name = name.strip()
     
     if len(login) > 32 or len(name) > 32:
         return comms.error(codes.LOGIN_LENGTH)
@@ -46,7 +48,7 @@ def register(login, name, pin_input, name_bypass=False):
     if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\-]+$", login):
         return comms.error(codes.LOGIN_CHAR)
 
-    if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\-]+$", name):
+    if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\- ]+$", name):
         return comms.error(codes.NAME_CHAR)
     
     clean_login = login.strip().lower()
@@ -137,11 +139,58 @@ def change_pin(user_uuid, old_pin, new_pin):
 
 
 def change_name(user_uuid, new_name):
-    if not new_name:
+    if not new_name.strip():
         return comms.error(codes.NAME_EMPTY)
     if len(new_name) > 32:
             return comms.error(codes.LOGIN_LENGTH)
-    if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\-]+$", new_name):
+    if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\- ]+$", new_name):
         return comms.error(codes.NAME_CHAR)
+    
+    new_name = new_name.strip()
+
     db.update_name(user_uuid, new_name)
+    return comms.ok()
+
+
+
+def create_acc(user_uuid, name="DEFAULT", currency="RUB"):
+
+    if not re.match(r"^[a-zA-Z0-9_а-яА-ЯёЁ\- ]+$", name):
+        return comms.error(codes.NAME_CHAR)
+
+    if not user_uuid:
+        return comms.error(codes.USER_NOT_FOUND)
+
+    acc_uuid = db.create_account(user_uuid, name, currency)
+
+    acc_num = db.get_num_by_uuid(acc_uuid)
+
+    if not acc_uuid or not acc_num:
+        return comms.error(codes.USER_CANNOT_CREATE)
+
+    return comms.ok(data={"acc_num": f"{acc_num}"})
+
+
+def delete_acc(acc_uuid, pin):
+
+    acc_name = db.get_acc_name_by_uuid(acc_uuid)
+
+    if acc_name.lower() == "счет по-умолчанию":
+        return comms.error(codes.DEFAULT_ACC_DELETE)
+
+    
+    user_uuid = db.get_user_by_acc_uuid(acc_uuid)
+    if pin is None:
+        return comms.error(codes.PIN_EMPTY)
+    
+    pin_hash = db.get_pin_hash(user_uuid)
+    if not check_pin(pin, pin_hash):
+         return comms.error(codes.PIN_WRONG)
+
+    bal = db.get_bal(acc_uuid)
+
+    if bal != 0:
+        return comms.error(codes.BALANCE_IS_NOT_EMPTY)
+    
+    db.delete_account(acc_uuid)
     return comms.ok()

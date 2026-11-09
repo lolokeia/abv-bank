@@ -26,6 +26,7 @@ AMOUNT_NOT_MUL_100 = "amount.not_mul_100"
 
 BALANCE_NEGATIVE = "balance.negative"
 BALANCE_INSUFFICIENT = "balance.insufficient"
+BALANCE_IS_NOT_EMPTY = "balance.is_not_empty"
 
 TRANSFER_RECV_NOT_FOUND = "transfer.recv_not_found"
 TRANSFER_SELF = "transfer.self"
@@ -40,3 +41,5 @@ SESSION_EXPIRED = "session.expired"
 
 CONNECTION_RESET = "connection.reset"
 CONNECTION_NO = "connection.no"
+
+DEFAULT_ACC_DELETE = "acc.default_delete"

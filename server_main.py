@@ -68,7 +68,7 @@ def handle(request):
         if not user_uuid:
             return comms.error(codes.SESSION_EXPIRED)
         
-        ACC_ACTIONS = {"get_balance", "deposit", "withdraw", "payment", "transfer", "burn"}
+        ACC_ACTIONS = {"get_balance", "deposit", "withdraw", "payment", "transfer", "burn", "delete_acc"}
 
         acc_uuid = None
         if action in ACC_ACTIONS:
@@ -123,6 +123,15 @@ def handle(request):
             get_history = transactions.get_history(user_uuid, isrecent)
             return get_history
 
+        elif action == "create_acc":
+            name = data.get("name")
+            create_acc = auth.create_acc(user_uuid, name)
+            return create_acc
+
+        elif action == "delete_acc":
+            pin = data.get("pin")
+            delete_acc = auth.delete_acc(acc_uuid, pin)
+            return delete_acc
 
         elif action == "change_pin":
             old_pin = data["old_pin"]

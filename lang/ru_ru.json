@@ -23,6 +23,9 @@
 
     "balance.negative": "Баланс не может быть отрицательным!",
     "balance.insufficient": "Недостаточно средств на балансе!",
+    "balance.is_not_empty": "Ваш баланс должен быть пуст!",
+
+    "acc.default_delete": "Вы не можете удалить счет по-умолчанию!",
 
     "transfer.recv_not_found": "Получатель перевода не найден!",
     "transfer.self": "Нельзя переводить деньги самому себе!",
@@ -74,9 +77,11 @@
     "accounts.burn": "сжечь баланс",
 
     "accounts.create": "создать счет",
-    "accounts.delete": "удалить счет",
+    "accounts.delete_acc": "удалить счет",
     "accounts.get_history": "история оперций",
     "accounts.logout": "выйти из аккаунта",
+    "accounts.create_acc": "Создать новый счет",
+
 
     "accounts.pin": "сменить пин-код",
     "accounts.login": "сменить логин",
@@ -95,6 +100,10 @@
     "prompt.login": "логин",
     "prompt.oldlogin": "старый логин",
     "prompt.newlogin": "новый логин",
+
+    "prompt.name": "Имя",
+    "prompt.oldname": "старое имя",
+    "prompt.newname": "новое имя",
 
     "prompt.acc_from": "снять с",
     "prompt.acc_to": "отправить на",

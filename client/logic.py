@@ -143,4 +143,15 @@ def quiet_relog():
     resp = login(login_input, pin)
     if resp.get('status') == "ok":
         return resp
-    else: return resp
+    else:
+        session.state['token'] = None
+        session.state['login'] = None
+        session.state['pin'] = None
+        return resp
+
+
+def create_acc(name, currency="RUB"):
+    return _send_n_recv(action='create_acc', data={'name': name, "currency": currency})
+
+def delete_acc(pin):
+    return _send_n_recv(action='delete_acc', data={'acc_num': get_current_acc(), 'pin': pin})

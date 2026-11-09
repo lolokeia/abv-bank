@@ -50,6 +50,7 @@ def init():
         currency TEXT NOT NULL,
         balance INTEGER NOT NULL,
         is_frozen INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT active,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (owner_uuid) REFERENCES Users(uuid)
     )
@@ -334,12 +335,16 @@ def create_account(user_uuid, name, currency):
     connection.commit()
     return acc_uuid
 
+def delete_account(acc_uuid):
+    cursor.execute("UPDATE Accounts SET status = 'closed' WHERE acc_uuid = ?", (acc_uuid,))
+    connection.commit()
+
 def get_accounts_by_user(user_uuid):
-    cursor.execute("SELECT acc_num, name, currency, balance, is_frozen FROM Accounts WHERE owner_uuid = ?", (user_uuid,))
+    cursor.execute("SELECT acc_num, name, currency, balance, is_frozen FROM Accounts WHERE owner_uuid = ? AND status = 'active'", (user_uuid,))
     return cursor.fetchall()
 
 def get_account_by_uuid(acc_uuid):
-    cursor.execute("SELECT * FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
+    cursor.execute("SELECT * FROM Accounts WHERE acc_uuid = ? AND status = 'active'", (acc_uuid,))
     row = cursor.fetchone()
     return row if row else None
 
@@ -347,6 +352,11 @@ def get_account_by_num(acc_num):
     cursor.execute("SELECT * FROM Accounts WHERE acc_num = ?", (acc_num,))
     row = cursor.fetchone()
     return row if row else None
+
+def get_acc_name_by_uuid(acc_uuid):
+    cursor.execute("SELECT name FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
+    row = cursor.fetchone()
+    return row[0] if row else None
 
 def get_user_by_acc_uuid(acc_uuid):
     cursor.execute("SELECT owner_uuid FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))

@@ -336,7 +336,10 @@ def handle(state):
             try:
                 try:
                     command = session.prompt("abv-bank > ")
-                except EOFError: print("Closing..."); break
+                except EOFError: 
+                    print("\nClosing...\n")
+                    state['running'] = False
+                    break
                 except (KeyboardInterrupt): print("To stop server, type exit"); continue
                 
                 if not command: continue
