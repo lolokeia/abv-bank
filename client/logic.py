@@ -1,9 +1,10 @@
 from client import session
-from shared import protocol, comms, codes
+from shared import protocol, comms, codes, log
 import tabulate
 
-
 def _send_n_recv(action, data=None, _retry=True):
+    if action != "ping":
+        log.info(f"[logic] request: {action}")
     sock = session.state["sock"]
     if sock is None:
         return comms.error(code=codes.CONNECTION_NO)
@@ -14,32 +15,42 @@ def _send_n_recv(action, data=None, _retry=True):
             req['token'] = token
 
         with session.state['sock_lock']:
+            if action != "ping":
+                log.req(f"[logic] Sent: {action}")
             protocol.send_message(message=req, sock=session.state["sock"])
 
     except (TimeoutError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError) as e:
+            log.warn(f"[logic] Send error: {action} > {e}")
+            session.state['sock'].close()
             session.state['sock'] = None
-            session.state['conn'] = False
             return comms.error(code='connection.error', data={"e": e})
     
     except Exception as e:
+        log.error(f"[logic] Exception: {action} > {e}")
         return comms.error(code='send.error', data={"e": e})
     
     try:
         with session.state['sock_lock']:
             resp = protocol.recv_message(sock=session.state["sock"])
+            if action != "ping":
+                log.resp(f"[logic] Received: {action} > {resp.get('status')}")
             
     except (TimeoutError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError) as e:
+        log.warn(f"[logic] Recv error: {action} > {e}")
+        session.state['sock'].close()
         session.state['sock'] = None
-        session.state['conn'] = False
         return comms.error(code='connection.error', data={"e": e})
     
     except Exception as e:
+        log.error(f"[logic] Exception: {action} > {e}")
         return comms.error(code='recv.error', data={"e": e})
 
     if resp:
         if resp.get('code') == codes.SESSION_EXPIRED and _retry:
+            log.warn(f"[logic] Session expired")
             relog = quiet_relog()
             if relog.get('status') != 'ok':
+                log.info(f"[logic] Relogged")
                 return relog
             return _send_n_recv(action, data, _retry=False)
     
@@ -70,9 +81,6 @@ def logout():
     resp = _send_n_recv(action='logout')
     if resp and resp.get('status') == 'ok':
         session.state['token'] = None
-        session.state['login'] = None
-        session.state['pin'] = None
-        session.state['balance'] = None
     return resp
 
 def get_accounts():
@@ -137,6 +145,7 @@ def ping():
         return False
     
 def quiet_relog():
+    log.info(f"[logic] Relogging")
     login_input = session.state['login']
     pin = session.state['pin']
 
@@ -144,6 +153,7 @@ def quiet_relog():
     if resp.get('status') == "ok":
         return resp
     else:
+        log.warn(f"[logic] Not relogged")
         session.state['token'] = None
         session.state['login'] = None
         session.state['pin'] = None

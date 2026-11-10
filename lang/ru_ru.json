@@ -1,4 +1,6 @@
 {
+    "lang": "ru_ru",
+    
     "title": "АБВ-БАНК",
     "pin.wrong": "Неправильный ПИН-код!",
     "pin.is_empty": "ПИН-код не может быть пустым!",
@@ -87,7 +89,12 @@
     "accounts.login": "сменить логин",
     "accounts.name": "сменить имя",
 
+    "loadmsg.starting": "Запуск приложения",
+    "loadmsg.get_accounts": "Получение данных",
+    "loadmsg.processing": "Обработка запроса",
+    "loadmsg.card_drawing": "Отрисовка интерфейса",
 
+    
 
 
 
