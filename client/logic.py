@@ -1,44 +1,55 @@
 from client import session
 from shared import protocol, comms, codes, log
-import tabulate
+import tabulate, time, threading
+timeout = 15
+
 
 def _send_n_recv(action, data=None, _retry=True):
     if action != "ping":
         log.info(f"[logic] request: {action}")
-    sock = session.state["sock"]
-    if sock is None:
+
+
+    if not session.runtime['aquire'].wait(timeout=timeout):
+        log.warn(f"[logic] no sock for {action} within {timeout}s")
         return comms.error(code=codes.CONNECTION_NO)
+    
+    sock = session.runtime["sock"]
+
+    if not sock:
+        return comms.error(code=codes.CONNECTION_NO)
+
     req = comms.request(action=action, data=data)
-    token = session.state.get('token')
+    token = session.runtime.get('token')
     try:
         if token:
             req['token'] = token
 
-        with session.state['sock_lock']:
+        with session.runtime['sock_lock']:
             if action != "ping":
                 log.req(f"[logic] Sent: {action}")
-            protocol.send_message(message=req, sock=session.state["sock"])
+            protocol.send_message(message=req, sock=sock)
+
 
     except (TimeoutError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError) as e:
-            log.warn(f"[logic] Send error: {action} > {e}")
-            session.state['sock'].close()
-            session.state['sock'] = None
-            return comms.error(code='connection.error', data={"e": e})
+        log.warn(f"[logic] timeout or connection error: {action} > {e}")
+        return comms.error(code='connection.error', data={"e": e})
     
+    except (AttributeError, OSError) as e:
+        log.error(f"[logic] No sock or sock closed error: {action} > {e}")
+        return comms.error(code='sock.error', data={"e": e})
+
     except Exception as e:
         log.error(f"[logic] Exception: {action} > {e}")
         return comms.error(code='send.error', data={"e": e})
     
     try:
-        with session.state['sock_lock']:
-            resp = protocol.recv_message(sock=session.state["sock"])
+        with session.runtime['sock_lock']:
+            resp = protocol.recv_message(sock=sock)
             if action != "ping":
                 log.resp(f"[logic] Received: {action} > {resp.get('status')}")
             
     except (TimeoutError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError) as e:
         log.warn(f"[logic] Recv error: {action} > {e}")
-        session.state['sock'].close()
-        session.state['sock'] = None
         return comms.error(code='connection.error', data={"e": e})
     
     except Exception as e:
@@ -63,13 +74,13 @@ def _send_n_recv(action, data=None, _retry=True):
 
 
 def get_current_acc():
-    return session.state['current_acc'][0]
+    return session.runtime['current_acc'][0]
 
 # no token required
 def login(login_input, pin_input):
     login_msg = _send_n_recv(action='login', data={'login': login_input, 'pin': pin_input})
     if login_msg.get('status') == "ok":
-        session.state['token'] = login_msg['data'].get('token')
+        session.runtime['token'] = login_msg['data'].get('token')
     return login_msg
 
 def register(login_input, name_input, pin_input):
@@ -80,7 +91,7 @@ def register(login_input, name_input, pin_input):
 def logout():
     resp = _send_n_recv(action='logout')
     if resp and resp.get('status') == 'ok':
-        session.state['token'] = None
+        session.runtime['token'] = None
     return resp
 
 def get_accounts():
@@ -110,19 +121,19 @@ def get_history(isrecent=True):
 def change_pin(old_pin, new_pin):
     resp = _send_n_recv(action='change_pin', data={'old_pin': old_pin, 'new_pin': new_pin})
     if resp.get('status') == 'ok':
-        session.state['pin'] = new_pin
+        session.runtime['pin'] = new_pin
     return resp
 
 def change_name(new_name):
     resp = _send_n_recv(action='change_name', data={'new_name': new_name})
     if resp.get('status') == 'ok':
-        session.state['name'] = new_name
+        session.runtime['name'] = new_name
     return resp
 
 def change_login(new_login):
     resp = _send_n_recv(action='change_login', data={'new_login': new_login})
     if resp.get('status') == 'ok':
-        session.state['login'] = new_login
+        session.runtime['login'] = new_login
     return resp
 
 def format_history(isrecent=True):
@@ -138,25 +149,21 @@ def format_history(isrecent=True):
         return "Ошибка показа истории"
     
 def ping():
-    resp = _send_n_recv(action='ping')
-    if resp.get('status') == 'ok':
-        return True
-    else:
-        return False
+    return _send_n_recv(action='ping')
     
 def quiet_relog():
     log.info(f"[logic] Relogging")
-    login_input = session.state['login']
-    pin = session.state['pin']
+    login_input = session.runtime['login']
+    pin = session.runtime['pin']
 
     resp = login(login_input, pin)
     if resp.get('status') == "ok":
         return resp
     else:
         log.warn(f"[logic] Not relogged")
-        session.state['token'] = None
-        session.state['login'] = None
-        session.state['pin'] = None
+        session.runtime['token'] = None
+        session.runtime['login'] = None
+        session.runtime['pin'] = None
         return resp
 
 

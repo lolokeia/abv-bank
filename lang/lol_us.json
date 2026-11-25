@@ -1,0 +1,121 @@
+{
+    "code": "lol_us",
+    "lang": "LOLCAT (US) / LOLSPEAK (Kitteh Kingdom)",
+    
+    "title": "\uE825 ABC-BANKZ",
+    "pin.wrong": "\uE783 NOPE! WRONG PINZ!",
+    "pin.is_empty": "\uE7BA PINZ CANNOT BE EMPTIEZ!",
+    "pin.invalid_length": "\uE7BA PINZ LENGTH IZ NOT RIGHT!",
+    "pin.invalid_chars": "\uE7BA ONLY NUMBARZ IN PINZ, KTHX!",
+
+    "login.is_empty": "\uE7BA WHO U IZ? LOGIN CANNOT BE EMPTIEZ!",
+    "login.invalid_length": "\uE7BA LOGIN TOO LONG OR TOO SMOL!",
+    "login.forbidden": "\uE711 DIS LOGIN IZ BANNED BY CEILING CAT!",
+    "login.invalid_chars": "\uE7BA WEIRD SYMBLZ IN LOGIN!",
+    "login.taken": "\uE77B SOME OTHER KITTEH TOOK DIS LOGIN!",
+
+    "name.is_empty": "\uE7BA U NEEDZ A NAME!",
+    "name.invalid_chars": "\uE7BA NO FUNNY SYMBLZ IN NAME!",
+
+    "user.cannot_create": "\uEA39 CAN HAZ NO USER! CREATION FAILED!",
+    "user.not_found": "\uE721 CANT FIND DAT KITTEH!",
+
+    "amount.not_digit": "\uE8EF DAT NOT A NUMBAR!",
+    "amount.negative": "\uE7BA NO NEGATIVE CHEEZBURGERS!",
+    "amount.not_mul_100": "\uE7BA MUST BE MULTIPLE OF 100, PLZ!",
+
+    "balance.negative": "\uE7BA BALANCE CANNOT BE BELOW ZERO!",
+    "balance.insufficient": "\uEA39 U IZ BROKE! NOT ENUFF MONIEZ!",
+    "balance.is_not_empty": "\uE7BA EMPTY UR POCKETS FIRST!",
+
+    "acc.default_delete": "\uE711 CANT DELETE MAIN STASH!",
+
+    "transfer.recv_not_found": "\uE721 DAT RECEIVER KITTEH IZ MISSING!",
+    "transfer.self": "\uE711 U CANT SEND MONIEZ TO URSELF, SILLY!",
+    "transfer.acc_num_wrong": "\uE7BA DAT STASH NUMBAR IZ FAKE!",
+
+    "action.unknown": "\uE897 WUT U DOIN? UNKNOWN ACTION!",
+    "server.error": "\uEA39 SERVER HAZ A SAD. INTERNAL ERROR.",
+    "bad_request": "\uE783 BAD REQUEST! SERVER CONFUSED!",
+
+    "session.expired": "\uE823 NAP TIME! SESSION EXPIRED.",
+
+    "connection.reset": "\uE839 CONNECTION KICKED BY DOGE!",
+    "connection.no": "\uE839 NO INTERWEBZ TO SERVER!",
+    "connection.error": "\uEA39 SERVER CONNECTION BORKED!",
+
+    "client.error": "\uE783 OH NOES! ERROR",
+    "client.screen_not_found": "\uE721 SCREEN IZ HIDING (NOT FOUND)",
+    "client.connecting": "\uE701 SNEAKING INTO SERVER...",
+    "client.long_connection": "\uE7BA CHECK UR TUBES AN SERVER STATUS",
+    "client.tries": "\uE72C TRY #",
+    "client.exit": "\uE7E8 BAI BAI",
+    "client.loading": "\uE895 WAIT A SEC... LOADING...",
+    "client.retry": "\uE72C TRY AGAIN",
+    "client.menu": "\uE80F MAIN TREEHOUSE",
+    
+    "acc.cantget": "\uEA39 CANT FETCH STASHES, \n OR UR BOX IZ EMPTIEZ",
+    "acc.acc": "\uE8C7 STASH #",
+
+    "login.main": "\uE77B LET ME IN!",
+    "login.login_entry": "\uE77B KITTEH NAME (LOGIN)",
+    "login.pin_entry": "\uE8D7 SECRET PINZ",
+    "login.button": "\uE77B HOP IN",
+    "login.promt": "\uE77B ALREADY HAZ ACCOUNT? HOP IN",
+
+    "register.main": "\uE8FA NEW KITTEH REGISTRATION",
+    "register.promt": "\uE8FA NO ACCOUNT? JOIN DA CLOWDER",
+    "register.button": "\uE8FB SIGN ME UP!",
+    "register.login_entry": "\uE77B KITTEH LOGIN",
+    "register.pin_entry": "\uE8D7 SECRET PINZ (4 DIGITZ)",
+    "register.name_entry": "\uE77B FLUFFY NAME",
+
+    "accounts.deposit": "\uE710 PUT MONIEZ IN",
+    "accounts.withdraw": "\uE738 TAKE MONIEZ OUT",
+    "accounts.payment": "\uE8C7 PAY FOR CHEEZBURGER",
+    "accounts.transfer": "\uE8AB SEND MONIEZ",
+    "accounts.burn": "\uE74D BURN ALL DA MONIEZ",
+
+    "accounts.create": "\uE710 NEW STASH",
+    "accounts.delete_acc": "\uE74D DESTROY STASH",
+    "accounts.get_history": "\uE81C MONIEZ HISTORY",
+    "accounts.logout": "\uF3B1 KTHXBYE (LOGOUT)",
+    "accounts.create_acc": "\uE710 MAKE NEW STASH",
+
+    "accounts.pin": "\uE8D7 NEW SECRET PINZ",
+    "accounts.login": "\uE77B CHANGE KITTEH LOGIN",
+    "accounts.name": "\uE70F CHANGE FLUFFY NAME",
+
+    "loadmsg.starting": "\uE7E8 WAKING UP KITTEH APP",
+    "loadmsg.get_accounts": "\uE896 SNIFFING FOR DATA",
+    "loadmsg.processing": "\uE943 DOING MATHZ...",
+    "loadmsg.card_drawing": "\uE790 PAINTING SHINY BUTTONZ",
+
+    "prompt.amount": "\uE8EF HOW MUCH MONIEZ",
+
+    "prompt.pin": "\uE8D7 PINZ",
+    "prompt.oldpin": "\uE8D7 OLD PINZ",
+    "prompt.newpin": "\uE8D7 SHINY NEW PINZ",
+
+    "prompt.login": "\uE77B LOGIN",
+    "prompt.oldlogin": "\uE77B OLD LOGIN",
+    "prompt.newlogin": "\uE77B NEW LOGIN",
+
+    "prompt.name": "\uE77B NAME",
+    "prompt.oldname": "\uE77B OLD NAME",
+    "prompt.newname": "\uE77B NEW NAME",
+
+    "prompt.acc_from": "\uE738 TAKE FROM STASH",
+    "prompt.acc_to": "\uE710 SEND TO STASH",
+
+    "prompt.recv_acc": "\uE8C7 TARGET KITTEH STASH",
+
+    "prompt.currency": "\uE8C7 SHINY COINS",
+
+    "copy.tooltip": "\uE8C8 CLICK TO COPY STASH NUMBAR",
+
+    "settings.title": "\uE713 SETTINGS",
+    "settings.save": "\uE74E SAVE DIS!",
+    "settings.exit": "\uE711 NOPE, GO BACK",
+    "settings.debug": "\uEBE8 NERD MODE (DEBUG)"
+}

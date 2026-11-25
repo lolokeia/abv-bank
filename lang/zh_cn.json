@@ -1,0 +1,115 @@
+{
+    "lang": "Chinese / 简体中文 (中国)",
+    
+    "title": "ABC银行",
+    "pin.wrong": "PIN码错误！",
+    "pin.is_empty": "PIN码不能为空！",
+    "pin.invalid_length": "PIN码长度无效！",
+    "pin.invalid_chars": "PIN码只能包含数字！",
+
+    "login.is_empty": "登录名不能为空！",
+    "login.invalid_length": "登录名长度无效！",
+    "login.forbidden": "禁止使用此登录名！",
+    "login.invalid_chars": "登录名包含无效字符！",
+    "login.taken": "此登录名已被占用！",
+
+    "name.is_empty": "姓名不能为空！",
+    "name.invalid_chars": "姓名包含无效字符！",
+
+    "user.cannot_create": "创建用户失败！",
+    "user.not_found": "未找到用户！",
+
+    "amount.not_digit": "金额必须是数字！",
+    "amount.negative": "金额不能为负数！",
+    "amount.not_mul_100": "金额必须是100的倍数！",
+
+    "balance.negative": "余额不能为负数！",
+    "balance.insufficient": "余额不足！",
+    "balance.is_not_empty": "您的余额必须为空！",
+
+    "acc.default_delete": "您不能删除默认账户！",
+
+    "transfer.recv_not_found": "未找到收款人！",
+    "transfer.self": "不能给自己转账！",
+    "transfer.acc_num_wrong": "收款人账号无效！",
+
+    "action.unknown": "未知操作！",
+    "server.error": "服务器内部错误。",
+    "bad_request": "错误请求！",
+
+    "session.expired": "会话已过期。",
+
+    "connection.reset": "连接已重置",
+    "connection.no": "未连接到服务器！",
+    "connection.error": "服务器连接错误",
+
+    "client.error": "错误",
+    "client.screen_not_found": "未找到页面",
+    "client.connecting": "正在连接...",
+    "client.long_connection": "请检查您的网络连接和服务器状态",
+    "client.tries": "尝试次数 #",
+    "client.exit": "退出",
+    "client.loading": "加载中...",
+    "client.retry": "重试",
+    "client.menu": "主菜单",
+    
+    "acc.cantget": "无法获取账户列表，\n 或账户列表为空",
+    "acc.acc": "账户 #",
+
+    "login.main": "登录",
+    "login.login_entry": "登录名",
+    "login.pin_entry": "PIN码",
+    "login.button": "登录",
+    "login.promt": "已有账号？立即登录",
+
+    "register.main": "注册",
+    "register.promt": "没有账号？立即注册",
+    "register.button": "注册",
+    "register.login_entry": "登录名",
+    "register.pin_entry": "PIN码（4位数字）",
+    "register.name_entry": "姓名",
+
+    "accounts.deposit": "存款",
+    "accounts.withdraw": "取款",
+    "accounts.payment": "支付",
+    "accounts.transfer": "转账",
+    "accounts.burn": "清空余额",
+
+    "accounts.create": "创建账户",
+    "accounts.delete_acc": "删除账户",
+    "accounts.get_history": "交易记录",
+    "accounts.logout": "退出登录",
+    "accounts.create_acc": "创建新账户",
+
+    "accounts.pin": "修改PIN码",
+    "accounts.login": "修改登录名",
+    "accounts.name": "修改姓名",
+
+    "loadmsg.starting": "正在启动应用",
+    "loadmsg.get_accounts": "正在获取数据",
+    "loadmsg.processing": "正在处理请求",
+    "loadmsg.card_drawing": "正在渲染界面",
+
+    "prompt.amount": "金额",
+
+    "prompt.pin": "PIN码",
+    "prompt.oldpin": "旧PIN码",
+    "prompt.newpin": "新PIN码",
+
+    "prompt.login": "登录名",
+    "prompt.oldlogin": "旧登录名",
+    "prompt.newlogin": "新登录名",
+
+    "prompt.name": "姓名",
+    "prompt.oldname": "旧姓名",
+    "prompt.newname": "新姓名",
+
+    "prompt.acc_from": "转出账户",
+    "prompt.acc_to": "转入账户",
+
+    "prompt.recv_acc": "收款人账户",
+
+    "prompt.currency": "货币",
+
+    "copy.tooltip": "点击复制账号"
+}

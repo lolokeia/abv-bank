@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+    <meta charset="UTF-8">
+    <title>500 | АБВ-БАНК</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <p class="debug_msg"></p>
+    <canvas id="money-bg"
+            data-count="80"
+            data-color="#e67105"
+            data-words="500, внутренняя, ошибка, сервера"
+            data-bills="500"
+            data-bill-chance="0.2"
+            data-speed="1.0"
+            data-parallax="0.1"
+            data-mouse-radius="130">
+    </canvas>
+
+    <script src="/js/money-bg.js"></script>
+    <script src="/js/splash.js"></script>
+
+    <div class="main">
+        <h1 class="err_text">500</h1>
+        <h4 class="desc">Внутренняя ошибка сервера</h4>
+        <b class="subdesc", id="splash"></b>
+        <b class="subdesc">Это ошибка на стороне сервера, </b>
+        <b class="subdesc">Попробуйте подождать и перезагрузить страницу</b>
+        <a href="/" class="app_btn">На главную</a>
+        <script>SplashErr()</script>
+    </div>
+
+    <script src="/js/footer.js"></script>
+    <script src="/js/cookies.js"></script>
+</body>
+</html>

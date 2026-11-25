@@ -1,0 +1,9 @@
+{
+    "ip": "127.0.0.1",
+    "port": 9999,
+    "language": "ru_ru",
+    "wd_timeout": 14,
+    "wd_tick": 0.5,
+    "wd_max_missed_pings": 2,
+    "debug": false
+}

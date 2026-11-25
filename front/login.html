@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход | АБВ-БАНК</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/api_logic.js" type="module"></script>
+</head>
+<body>
+    <p class="debug_msg"></p>
+    <canvas id="money-bg"
+            data-count="80"
+            data-color="#2edd2e"
+            data-words="Вход, в, аккаунт"
+            data-bills="ВХОД"
+            data-bill-chance="0.2"
+            data-speed="1.0"
+            data-parallax="0.1"
+            data-mouse-radius="130">
+    </canvas>
+
+    <script src="/js/money-bg.js"></script>
+    <script src="/js/splash.js"></script>
+
+    <section class="login">
+        <div class="main">
+                <a href="/" class="go-back">На главную</a>
+            <h1 class="main_text">Вход</h1>
+            <h4 class="desc">Войдите или зарегистрируйтесь</h4>
+            <form id="login-form" class="login-form" style="width: 100%; display: flex; flex-direction: column; gap: 15px;">
+                <div class="input_card">
+                    <p class="tooltip">Логин</p>
+                    <input type="text" class="input" id="login-input" placeholder="Введите логин" required>
+                </div>
+
+                <div class="input_card">
+                    <p class="tooltip">Пин-код</p>
+                    <input type="password" class="input" id="pin-input" inputmode="numeric" maxlength="4" placeholder="Введите PIN-код" required>
+                    
+                    <button type="button" class="toggle-password" id="toggle-pin" aria-label="Показать PIN-код">
+                        <span class="icon-eye" id="pin-icon"></span>
+                    </button>
+                </div>
+                <button type="submit" class="submit-btn" id="submit-btn">Войти<span class="icon-arrow-right"></span></button>
+            </form>
+
+        </div>
+    </section>
+
+    <section class="register">
+        <div class="main">
+            <h1 class="main_text">Регистрация</h1>
+            <h4 class="desc">Не используйте свои реальные данные!</h4>
+        </div>
+    </section>
+
+    <script src="/js/footer.js"></script>
+    <script src="/js/cookies.js"></script>
+
+    <script>
+    const pinInput = document.getElementById('pin-input');
+    const toggleBtn = document.getElementById('toggle-pin');
+    const icon = document.getElementById('pin-icon');
+
+    toggleBtn.addEventListener('click', () => {
+        // Проверяем текущее состояние
+        const isPassword = pinInput.type === 'password';
+
+        // Меняем тип инпута
+        pinInput.type = isPassword ? 'text' : 'password';
+
+        // Меняем класс иконки
+        if (isPassword) {
+            icon.classList.add('icon-eye-off');
+            toggleBtn.setAttribute('aria-label', 'Скрыть PIN-код');
+        } else {
+            icon.classList.remove('icon-eye-off');
+            toggleBtn.setAttribute('aria-label', 'Показать PIN-код');
+        }
+    });
+    </script>
+
+    <script src="/js/button_handler.js" type="module"></script>
+
+    <div id="toast-container" class="toast-container">
+    </div>
+
+</body>
+</html>

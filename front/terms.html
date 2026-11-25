@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отказ от ответственности | АБВ-БАНК</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .disclaimer-wrapper {
+            max-width: 820px;
+            margin: 30px auto 50px auto;
+            padding: 0 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .disclaimer-card {
+            background-color: rgba(22, 24, 23, 0.92);
+            backdrop-filter: blur(8px);
+            border: 1px solid #2e3330;
+            border-radius: 14px;
+            padding: 32px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.65);
+            color: #e0e0e0;
+            text-align: left;
+        }
+
+        .disclaimer-title {
+            font-size: 20px;
+            color: #ffffff;
+            margin-top: 0;
+            margin-bottom: 24px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #2e3330;
+        }
+
+        .disclaimer-title span {
+            color: #2ecc71;
+        }
+
+        .disclaimer-item {
+            margin-bottom: 20px;
+        }
+
+        .disclaimer-item h3 {
+            font-size: 16px;
+            color: #2ecc71;
+            margin: 0 0 6px 0;
+        }
+
+        .disclaimer-item p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #cccccc;
+            margin: 0;
+        }
+
+        .disclaimer-actions {
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid #2e3330;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .abv-back-btn {
+            display: inline-block;
+            text-decoration: none;
+            color: #ffffff;
+            border: 1.5px solid #2ecc71;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.5s ease;
+        }
+
+        .abv-back-btn:hover {
+            background-color: #0ac457;
+            color: #0d0f0e;
+            box-shadow: 0 0 25px rgba(46, 221, 46, 0.658);
+            transform: scale(1.1);
+        }
+        
+        #term {
+            transform: scale(0.7);
+        }
+
+        @media (max-width: 600px) {
+            .disclaimer-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <p class="debug_msg"></p>
+    <canvas id="money-bg"
+            data-count="80"
+            data-color="#2edd2e"
+            data-bill-chance="0.2"
+            data-speed="1.0"
+            data-parallax="0.1"
+            data-mouse-radius="130">
+    </canvas>
+
+    <script src="/js/money-bg.js"></script>
+    <script src="/js/splash.js"></script>
+
+    <div class="main">
+        <h1 class="main_text" id="term">ОТКАЗ ОТ ОТВЕТСТВЕННОСТИ</h1>
+        <h4 class="desc">Обязательно к прочтению</h4>
+    </div>
+
+    <section class="disclaimer-wrapper">
+        <div class="disclaimer-card">
+            <h2 class="disclaimer-title">Правила использования сайта <span>АБВ-БАНКА</span></h2>
+
+            <div class="disclaimer-item">
+                <h3>1. Статус проекта</h3>
+                <p>Этот веб-ресурс является симулятором банковской системы, написанным в рамках курсовой/дипломной работы. Он не является настоящей банковской организацией и не оказывает реальных финансовых услуг.</p>
+            </div>
+
+            <div class="disclaimer-item">
+                <h3>2. Виртуальные средства</h3>
+                <p>Все счета, балансы, номера карт и денежные переводы являются вымышленными. Они не имеют реальной стоимости и не подлежат обмену на настоящие деньги.</p>
+            </div>
+
+            <div class="disclaimer-item">
+                <h3>3. Запрет на ввод реальных данных</h3>
+                <p>Пользователю строго запрещается использовать свои настоящие персональные и конфиденциальные данные при регистрации и других действиях на сайте. В перечень запрещенных данных входят: реальные фамилии, имена и отчества, адреса электронной почты, номера телефонов, логины, пин-коды, пароли, ключи и иные средства для входа в реальные сервисы.</p>
+            </div>
+
+            <div class="disclaimer-item">
+                <h3>4. Использование файлов cookie</h3>
+                <p>Сайт использует технические файлы cookie для сохранения настроек авторизации (например, токен сессии) и настроек сайта. Для оценки работы проекта сайт собирает анонимную обезличенную информацию о действиях пользователя на сайте, например - регистрация, авторизация, операции над средствами.</p>
+            </div>
+
+            <div class="disclaimer-item">
+                <h3>5. Отказ от претензий</h3>
+                <p>Сервис предоставляется "как есть". Разработчик и администратор не несут ответственности за сохранность данных, а также за бесперебойную работу сервера. Разработчик и администратор могут заблокировать, заморозить, удалить или изменить любые данные пользователя без его ведома и/или уведомления.</p>
+            </div>
+
+            <div class="disclaimer-item">
+                <h3>6. Принятие условий</h3>
+                <p>Нажимая кнопку "Согласен" в уведомлении или проходя регистрацию на сайте, пользователь подтверждает ознакомление и полное согласие с настоящими правилами.</p>
+            </div>
+
+            <div class="disclaimer-actions">
+                <a href="/" class="abv-back-btn">На главную</a>
+            </div>
+        </div>
+    </section>
+
+    <script src="/js/footer.js"></script>
+    <script src="/js/cookies.js"></script>
+</body>
+</html>
