@@ -79,14 +79,14 @@ def login(login_input, pin_input):
     user_uuid = db.get_user_by_login(login_input)
 
     if user_uuid is None:
-        return comms.error(codes.USER_NOT_FOUND)
+        return comms.error(codes.CREDS_WRONG)
     
     if pin_input is None:
         return comms.error(codes.PIN_EMPTY)
     
     pin_hash = db.get_pin_hash(user_uuid)
     if not check_pin(pin_input, pin_hash):
-         return comms.error(codes.PIN_WRONG)
+         return comms.error(codes.CREDS_WRONG)
     
     name = db.get_name_from_id(user_uuid)
 
