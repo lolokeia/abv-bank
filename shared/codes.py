@@ -1,5 +1,6 @@
 # ОШИБКИ PIN
-PIN_WRONG = "pin.wrong"
+CREDS_WRONG = 'creds.wrong'
+
 PIN_EMPTY = "pin.is_empty"
 PIN_LENGTH = "pin.invalid_length"
 PIN_CHAR = "pin.invalid_chars"

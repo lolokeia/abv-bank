@@ -43,13 +43,35 @@ async function _request(method, endpoint, body = null) {
     return data
 }
 
-async function deposit(amount, acc_num) {
-    return await _request('POST', "/api/accounts/deposit", { amount: amount, acc_num: acc_num })
-}
-
 async function login(login, pin) {
     return await _request('POST', "/api/login", { login: login, pin: pin })
 }
+
+async function register(login, name, pin) {
+    return await _request('POST', "/api/register", { login: login, name: name, pin: pin })
+}
+
+async function logout() {
+    return await _request('POST', "/api/logout")
+}
+
+
+
+async function get_accounts() {
+    return await _request('POST', "/api/get_accounts")
+}
+
+
+
+async function deposit(amount, acc_num) {
+    return await _request('POST', "/api/deposit", { amount: amount, acc_num: acc_num })
+}
+
+async function withdraw(amount, acc_num) {
+    return await _request('POST', "/api/withdraw", { amount: amount, acc_num: acc_num })
+}
+
+
 
 async function errResolve(error) {
     let text
@@ -63,8 +85,12 @@ async function errResolve(error) {
     return text
 }
 const API = {
-    deposit,
     login,
+    register,
+    logout,
+    get_accounts,
+    deposit,
+    withdraw,
     errResolve,
 }
 export default API

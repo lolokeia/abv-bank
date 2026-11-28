@@ -15,6 +15,10 @@
     box-sizing: border-box;
 }
 
+[hidden] {
+    display: none !important;
+}
+
 /*
 ПРИЛОЖЕНИЕ*/
 
@@ -71,9 +75,10 @@ body {
 
 
 .main_text {
-    margin-top: -10px;
-    font-size: clamp(70px, 8vw, 70px);
+    margin: 0;
+    font-size: clamp(36px, 9vw, 64px);
     font-weight: 900;
+    line-height: 1.1;
     text-shadow: 0 0 25px rgba(0, 0, 0, 0.658);
 }
 
@@ -85,8 +90,10 @@ body {
 }
 
 .desc {
-    margin-bottom: 5px;
-    margin-top: -20%;
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    color: var(--text_inactive);
+    font-weight: normal;
 }
 
 .footer-bottom {
@@ -101,40 +108,31 @@ body {
     backdrop-filter: blur(10px);
 }
 
-.login {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-}
-
+.login,
 .register {
-    display: none;
-    flex: 1;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-}
-
-.main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center !important;
+    justify-content: center;
     text-align: center;
-    gap: 12px;
+    gap: 14px;
 
     margin: auto;
-
     padding: 32px 24px;
+    width: calc(100% - 32px);
+    max-width: 460px;
 
-    max-width: 500px;
-    max-height: 1000px;
     border: 1px solid var(--contrast_color);
     border-radius: 16px;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
 }
 
 .toast-container {
@@ -154,14 +152,13 @@ body {
     width: 100%;
 }
 
-
 .toast {
     padding: 8px 6px;
     gap: 0px;
 
     min-width: 400px;
     min-height: 50px;
-    background:color-mix(in srgb, color var(--toast_border), color black 50%);
+    background: color-mix(in srgb, color var(--toast_border));
     backdrop-filter: blur(10px);
     border: 2px solid var(--toast_border);
     border-radius: 8px;
@@ -198,20 +195,30 @@ body {
 }
 
 .input {
-    width: 350px;
-    height: 40px;
-    max-width: 450px;
-    max-height: 100px;
-    padding-left: 15px;
+    width: 100%;
+    height: 42px;
+    padding: 0 15px;
 
     margin-top: 0;
     background-color: var(--bg_color);
-    color: var(--text_inactive);
+    color: var(--text_color);
     border: 2px solid var(--dark_green);
     border-radius: 5px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
     transition: 0.2s ease-in-out;
+}
+
+.input::placeholder {
+    color: var(--text_inactive);
+}
+
+
+.tooltip {
+    align-self: flex-start;
+    margin: 0 0 2px 4px;
+    font-size: 14px;
+    color: var(--text_color);
 }
 
 .input:hover {
@@ -225,24 +232,23 @@ body {
     outline: none;
 }
 
-.input_card {
+.input-card {
     position: relative;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    width: 350px;
+    gap: 5px;
+    width: 100%;
 }
 
 
-.input_card .input {
-    width: 100%;
-    padding-right: 45px; 
+.input-card .input {
+    padding-right: 40px; 
 }
 
 
 .toggle-password {
     position: absolute;
-    right: 5px; 
+    right: 12px; 
     bottom: 0;
     height: 40px;
     width: 40px;
@@ -289,16 +295,6 @@ body {
     mask: url('../icons/ic_fluent_arrow_right_40_regular.svg') center / contain no-repeat;
 }
 
-/* [class^="icon-"], 
-[class*=" icon-"]{
-    transition: 0.3s ease-in-out;
-}
-
-[class^="icon-"]:hover, 
-[class*=" icon-"]:hover {
-    transform: scale(1);
-} */
-
 .submit-btn {
     display: flex;
     justify-content: center;
@@ -325,27 +321,24 @@ body {
     transform: scale(1.05);
 }
 
-
 .submit-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
 }
 
 .go-back {
-    align-items:flex-start;
-    margin-left: 15px;
     display: inline-block;
-    margin-top: 0px;
+    margin: 0 0 8px 0;
     padding: 10px 25px;
     background-color: var(--bg_color);
     color: var(--text_color);
     text-decoration: none;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
     border-radius: 6px;
     box-shadow: 0 0 10px rgb(0, 0, 0);
     border: 2px solid var(--highlight_color);
-    transition: all 0.5s ease;
+    transition: all 0.3s ease;
 }
 
 .go-back:hover {
@@ -353,4 +346,19 @@ body {
     color: var(--bg_color);
     box-shadow: 0 0 25px rgba(46, 221, 46, 0.658);
     transform: scale(1.1);
+}
+
+.transparent-btn {
+    background: transparent;
+    width: 100%;
+    padding: 8px;
+    color: var(--text_inactive);
+    cursor: pointer;
+    border: 0;
+    font-size: 15px;
+    transition: color 0.2s ease;
+}
+
+.transparent-btn:hover {
+    color: var(--text_color);
 }
