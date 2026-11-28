@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход | АБВ-БАНК</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <script src="/js/api_logic.js" type="module"></script>
+</head>
+<body>
+    <p class="debug_msg"></p>
+    <canvas id="money-bg"
+            data-count="80"
+            data-color="#2edd2e"
+            data-words="Вход, в, аккаунт, авторизация, регистрация"
+            data-bills="AUTH"
+            data-bill-chance="0.2"
+            data-speed="1.0"
+            data-parallax="0.1"
+            data-mouse-radius="130">
+    </canvas>
+
+    <script src="/js/money-bg.js"></script>
+
+    <section class="login">
+                <a href="/" class="go-back">На главную</a>
+            <h1 class="main_text">Вход</h1>
+            <h4 class="desc">Войдите в аккаунт</h4>
+            <form class="auth-form">
+                <div class="input-card">
+                    <p class="tooltip">Логин</p>
+                    <input type="text" class="input" id="log-login-input" placeholder="Введите логин" required>
+                </div>
+
+                <div class="input-card">
+                    <p class="tooltip">Пин-код</p>
+                    <input type="password" class="input" id="log-pin-input" inputmode="numeric" maxlength="4" placeholder="Введите PIN-код" required>
+                    
+                    <button type="button" class="toggle-password" data-action="toggle_password" aria-label="Показать PIN-код">
+                        <span class="icon-eye" id="pin-icon"></span>
+                    </button>
+                </div>
+                <button type="submit" class="submit-btn" data-action="login">Войти<span class="icon-arrow-right"></span></button>
+            </form>
+
+            <button class="transparent-btn" data-action="toggle_register">Нет аккаунта? Зарегистрироваться</button>
+            <button class="transparent-btn" data-action="forgot_pin">Забыли пин-код? восстановить</button>
+    </section>
+
+    <section class="register" hidden>
+                <a href="/" class="go-back">На главную</a>
+            <h1 class="main_text">Регистрация</h1>
+            <h4 class="desc">Зарегистрируйтесь</h4>
+            <form class="auth-form">
+                <div class="input-card">
+                    <p class="tooltip">Логин</p>
+                    <input type="text" class="input" id="reg-login-input" placeholder="Введите логин" required>
+                </div>
+
+                <div class="input-card">
+                    <p class="tooltip">Имя</p>
+                    <input type="text" class="input" id="reg-name-input" placeholder="Введите имя" required>
+                </div>
+
+                <div class="input-card">
+                    <p class="tooltip">Пин-код</p>
+                    <input type="password" class="input" id="reg-pin-input" inputmode="numeric" maxlength="4" placeholder="Введите ПИН-код" required>
+                    
+                    <button type="button" class="toggle-password" data-action="toggle_password" aria-label="Показать ПИН-код">
+                        <span class="icon-eye" id="pin-icon"></span>
+                    </button>
+                </div>
+
+                <div class="input-card">
+                    <p class="tooltip">Пин-код повторно</p>
+                    <input type="password" class="input" id="reg-pin-confirm" inputmode="numeric" maxlength="4" placeholder="Введите ПИН-код повторно" required>
+                    
+                    <button type="button" class="toggle-password" data-action="toggle_password" aria-label="Показать ПИН-код">
+                        <span class="icon-eye" id="pin-icon"></span>
+                    </button>
+        </div>
+
+                <button type="submit" class="submit-btn" data-action="register">Войти<span class="icon-arrow-right"></span></button>
+            </form>
+            <button class="transparent-btn" data-action="toggle_register">Уже есть аккаунт? Войти</button>
+    </section>
+
+    <script src="/js/footer.js"></script>
+    <script src="/js/cookies.js"></script>
+
+    <script src="/js/dispatcher.js" type="module"></script>
+
+    <div id="toast-container" class="toast-container">
+    </div>
+
+</body>
+</html>

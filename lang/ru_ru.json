@@ -1,5 +1,5 @@
 {
-    "lang": "ru_ru",
+    "lang": "Russian / Русский (Россия)",
     
     "title": "АБВ-БАНК",
     "pin.wrong": "Неправильный ПИН-код!",
@@ -119,7 +119,11 @@
 
     "prompt.currency": "валюта",
 
+    "settings.save": "Сохранить",
+    "settings.exit": "Выйти без сохранения",
+    "settings.debug": "Дебаг-режим",
+    "settings.ip":"IP сервера",
 
-
+    "settings.port":"Порт (9999)",
     "copy.tooltip": "нажмите для копирования номера счета"
 }

@@ -1,0 +1,115 @@
+{
+    "lang": "English (US)",
+    
+    "title": "ABC-BANK",
+    "pin.wrong": "Incorrect PIN code!",
+    "pin.is_empty": "PIN code cannot be empty!",
+    "pin.invalid_length": "Invalid PIN code length!",
+    "pin.invalid_chars": "PIN code must contain digits only!",
+
+    "login.is_empty": "Login cannot be empty!",
+    "login.invalid_length": "Invalid login length!",
+    "login.forbidden": "This login is forbidden!",
+    "login.invalid_chars": "Login contains invalid characters!",
+    "login.taken": "This login is already taken!",
+
+    "name.is_empty": "Name cannot be empty!",
+    "name.invalid_chars": "Name contains invalid characters!",
+
+    "user.cannot_create": "Failed to create user!",
+    "user.not_found": "User not found!",
+
+    "amount.not_digit": "Amount must be a number!",
+    "amount.negative": "Amount cannot be negative!",
+    "amount.not_mul_100": "Amount must be a multiple of 100!",
+
+    "balance.negative": "Balance cannot be negative!",
+    "balance.insufficient": "Insufficient funds!",
+    "balance.is_not_empty": "Your balance must be empty!",
+
+    "acc.default_delete": "You cannot delete the default account!",
+
+    "transfer.recv_not_found": "Recipient not found!",
+    "transfer.self": "You cannot transfer money to yourself!",
+    "transfer.acc_num_wrong": "Invalid recipient account number!",
+
+    "action.unknown": "Unknown action!",
+    "server.error": "Internal server error.",
+    "bad_request": "Bad request!",
+
+    "session.expired": "Session expired.",
+
+    "connection.reset": "Connection reset",
+    "connection.no": "No connection to the server!",
+    "connection.error": "Server connection error",
+
+    "client.error": "Error",
+    "client.screen_not_found": "Screen not found",
+    "client.connecting": "Connecting...",
+    "client.long_connection": "Check your network connection and server status",
+    "client.tries": "attempt #",
+    "client.exit": "Exit",
+    "client.loading": "Loading...",
+    "client.retry": "Retry",
+    "client.menu": "Main menu",
+    
+    "acc.cantget": "Unable to retrieve account list, \n or the account list is empty",
+    "acc.acc": "Account #",
+
+    "login.main": "Log in",
+    "login.login_entry": "Login",
+    "login.pin_entry": "PIN code",
+    "login.button": "log in",
+    "login.promt": "Already have an account? log in",
+
+    "register.main": "Registration",
+    "register.promt": "Don't have an account? sign up",
+    "register.button": "Sign up",
+    "register.login_entry": "Login",
+    "register.pin_entry": "PIN code (4 digits)",
+    "register.name_entry": "Name",
+
+    "accounts.deposit": "deposit",
+    "accounts.withdraw": "withdraw",
+    "accounts.payment": "pay",
+    "accounts.transfer": "transfer",
+    "accounts.burn": "burn balance",
+
+    "accounts.create": "create account",
+    "accounts.delete_acc": "delete account",
+    "accounts.get_history": "transaction history",
+    "accounts.logout": "log out",
+    "accounts.create_acc": "Create new account",
+
+    "accounts.pin": "change PIN code",
+    "accounts.login": "change login",
+    "accounts.name": "change name",
+
+    "loadmsg.starting": "Starting application",
+    "loadmsg.get_accounts": "Fetching data",
+    "loadmsg.processing": "Processing request",
+    "loadmsg.card_drawing": "Rendering interface",
+
+    "prompt.amount": "amount",
+
+    "prompt.pin": "PIN code",
+    "prompt.oldpin": "old PIN code",
+    "prompt.newpin": "new PIN code",
+
+    "prompt.login": "login",
+    "prompt.oldlogin": "old login",
+    "prompt.newlogin": "new login",
+
+    "prompt.name": "Name",
+    "prompt.oldname": "old name",
+    "prompt.newname": "new name",
+
+    "prompt.acc_from": "withdraw from",
+    "prompt.acc_to": "send to",
+
+    "prompt.recv_acc": "recipient account",
+
+    "prompt.currency": "currency",
+
+    "copy.tooltip": "click to copy account number"
+}

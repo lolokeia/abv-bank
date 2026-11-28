@@ -9,14 +9,13 @@ try:
     # import ctktable
 
     # импорты из API
-    from client import locales as lo, logic, session as se
+    from client import locales as lo, logic, session as se, settings
     from shared import codes, log
-
-    # Импорт конфига
-    import client_config as config
 
     # сторонние импорты
     import pyperclip
+
+
 except ModuleNotFoundError as e:
     print("[PRE-INIT] Could not initialize some libraries!")
     print(e)
@@ -28,22 +27,48 @@ print("[PRE-INIT] Libraries initialized")
 
 ICON_FONT = (("Segoe MDL2 Assets", "Segoe UI Symbol", "Arial"), 20)
 
-# инициализация локализации
-lo.json_init()
-log.log_init('latest_client.log')
-log.clear()
+# инициализация
+def client_init():
+    try:
+        log.log_init('latest_client.log')
+        log.clear()
+        log.info("[INIT] Log initiated")
 
-log.info("[INIT] JSON localization initialized.")
-log.info(f"[INIT] selected lang: {lo.loc('lang')}. if you see 'lang' it means no localization used")
+        log.info(f"[INIT] Initiating settings")
+        settings.init()
 
-log.info("[INIT] Log initialized")
+        time.sleep(0.2)
+
+        lo.json_init()
+
+        log.info("[INIT] JSON localization initialized.")
+        log.info(f"[INIT] selected lang: {lo.loc('lang')}. if you see 'lang' it means no localization used")
+    except Exception as e:
+        print(f"[PRE-INIT] Could not init main")
+        print(f"[PRE-INIT] Error: {e}")
+        input("Critical failure detected, Press enter to exit")
+        exit(1)
+client_init()
+
+log.debug(f"SETTINGS: {se.settings}")
+log.debug(f"RUNTIME: {se.runtime}")
+
 
 # маленькие функции
 def close():
     log.info("[Main] Closing")
-    if se.state['sock']:
-        se.state["sock"].close()
+    if se.runtime['sock']:
+        se.runtime["sock"].close()
+    se.runtime['running'] = False
+    time.sleep(1)
     exit(0)
+
+
+def open_settings(from_screen):
+    se.runtime['prev_screen'] = from_screen
+    change_screen('settings')
+
+
 
 def logout():
     log.info("[Main] logging out")
@@ -60,9 +85,9 @@ def get_accounts():
             return False
         if accounts.get('status') == 'ok':
             if accounts['data'].get('accounts') == {}:
-                se.state['accounts'] = accounts['data'].get('accounts')
+                se.runtime['accounts'] = accounts['data'].get('accounts')
                 return False
-            se.state['accounts'] = accounts['data'].get('accounts')
+            se.runtime['accounts'] = accounts['data'].get('accounts')
             get_accounts_tries = 0
             return True
         else:
@@ -91,58 +116,116 @@ def cvrt_div(amount):
 
 # соединение с сервером
 def watchdog():
-    while True:
+    tick = 0
+    se.runtime['pings'] = 0
 
-        if se.state['conn'] == True:
-            log.info("[WD] Already connecting")
-            time.sleep(config.WATCHDOG_TIMEOUT)
-            continue
-        # print(se.state['sock'])
+    log.info(f"[WD] Watchdog started")
+
+    while se.runtime['running'] == True:
+
+        if se.settings['debug'] == True:
+            log.debug(f"tick: {tick}")
+        sock = se.runtime['sock']
+
+        if se.runtime['need_restart']:
+            try:
+                se.runtime['aquire'].clear()
+                se.runtime['sock'].close()
+                se.runtime['sock'] = None
+                se.runtime['need_restart'] = False
+            except Exception:
+                log.error("[WD] cannot set sock to closed")
+                se.runtime['sock'] = None
+                se.runtime['aquire'].clear()
+                pass
+
+        if se.runtime['conn'] == True:
+            # log.info("[WD] Already connecting")
+            pass
+        
+        else:
+        # print(se.runtime['sock'])
         
         # print(ping)
-        
-        if not se.state.get('sock'):
-            log.info("[WD] No sock detected")
-            se.state['sock'] = connect_to_server()
-            time.sleep(config.WATCHDOG_TIMEOUT)
-            continue
+    
+            if not sock:
+                log.info("[WD] No sock detected")
+                def connect():
+                    host = se.settings['ip']
+                    port = se.settings['port']
 
-        ping = logic.ping()
-
-        if not ping:
-            log.warn("[WD] ping dead")
-            try:
-                se.state['sock'].close()
-                se.state['sock'] = None
-            except Exception:
+                    se.runtime['sock'] = connect_to_server(host, port)
+                    se.runtime['aquire'].set()
+                if se.runtime['conn'] == False:
+                    log.info("[WD] starting connect")
+                    threading.Thread(target=connect, daemon=True).start()
                 pass
-                    
-            se.state['sock'] = None 
-        time.sleep(config.WATCHDOG_TIMEOUT)
+            else:
+                def ping_it():
+                    se.runtime['ping_stat'] = True
+                    log.info("[PING] starting ping")
+                    ping = logic.ping()
+
+                    if ping:
+                        ping = ping.get('status')
+
+                    if ping == "ok":
+                        se.runtime['ping_stat'] = False
+                        log.info("[PING] ping good")
+                        se.runtime['pings'] = 0
+                        pass
+                    else: se.runtime['pings'] += 1; log.warn("[PING] ping dead")
+
+                    if se.runtime['pings'] >= se.settings['wd_max_missed_pings']:
+                        log.warn("[PING] max ping misses reached")
+                        try:
+                            se.runtime['aquire'].clear()
+                            se.runtime['sock'].close()
+                            se.runtime['sock'] = None
+                        except Exception:
+                            log.error("[WD] cannot set sock to closed")
+                            se.runtime['sock'] = None
+                            se.runtime['aquire'].clear()
+                            pass
+                        se.runtime['pings'] = 0
+                    se.runtime['ping_stat'] = False
+                            
+
+                if se.runtime['ping_stat'] == False and tick % se.settings['wd_timeout'] == 0:
+                    threading.Thread(target=ping_it, daemon=True).start()
+
+        tick += 1
+        time.sleep(se.settings['wd_tick'])
+
+    log.info("[WD] Closed")
+    return
+
+    
 
 
-def connect_to_server(host=config.HOST, port=config.PORT):
+def connect_to_server(host, port):
     log.info("[Conn] connecting")
 
-    se.state['conn'] = True
+    se.runtime['conn'] = True
     app.after_idle(show_connect)
-    se.state['conn_tries'] = 1
+    se.runtime['conn_tries'] = 1
     app.after_idle(update_connect)
-    while se.state['conn'] == True:
+    while se.runtime['conn'] == True and se.runtime['running'] == True:
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(5)
             sock.connect((host, port))
             app.after_idle(hide_connect)
-            se.state['conn'] = False
+            se.runtime['conn'] = False
             log.info("[Conn] connected")
             return sock
         except (TimeoutError, ConnectionRefusedError, OSError) as e:
             log.warn(f"[Conn] cannot connect: {e}")
-            se.state['conn_tries'] += 1
+            se.runtime['conn_tries'] += 1
             app.after_idle(update_connect)
             time.sleep(1)
             continue
+    log.info("[Conn] Exiting connection func")
 
 
 # сборка карточки счета
@@ -187,7 +270,7 @@ def card_build(parent, acc_num, acc_name, acc_currency, is_frozen, acc_bal):
 
     def onclick(event=None):
             log.info(f"[Main] card {acc_name} clicked")
-            se.state['current_acc'] = [acc_num, acc_name, acc_currency, acc_bal, is_frozen]
+            se.runtime['current_acc'] = [acc_num, acc_name, acc_currency, acc_bal, is_frozen]
             card.after_idle(lambda: change_screen('account'))
             return
     
@@ -225,7 +308,7 @@ def prompt(prompts, redir):
     top.attributes("-topmost", True)
     top.grab_set()
     entries = {}
-    acc = se.state['current_acc']
+    acc = se.runtime['current_acc']
 
     if "amount" in prompts:
         bal = ctk.CTkLabel(top, text=f"счет - {acc[1]}, баланс - {cvrt_div(acc[3])} {acc[2]}")
@@ -236,7 +319,7 @@ def prompt(prompts, redir):
         label = lo.loc(f"prompt.{field}")
 
         if field in combo:
-            accounts = se.state['accounts']
+            accounts = se.runtime['accounts']
             display_val = [f"{item[1]} - {item[0]}" if isinstance(item, (list, tuple)) else str(item) for item in accounts]
 
             widget = ctk.CTkComboBox(top, values=display_val)
@@ -263,7 +346,7 @@ def prompt(prompts, redir):
         entries[field] = widget
 
     def _onclick():
-        se.state['loading_msg'] = lo.loc("loadmsg.processing")
+        se.runtime['loading_msg'] = lo.loc("loadmsg.processing")
         app.after(0, show_loading)
         values = []
 
@@ -272,7 +355,7 @@ def prompt(prompts, redir):
 
             if field == 'amount':
                 if val == "" and redir != "payment":
-                    se.state['last_error'] = 'amount.not_digit1'
+                    se.runtime['last_error'] = 'amount.not_digit1'
                     app.after(0, hide_loading)
                     app.after_idle(lambda: change_screen('error'))
                     return
@@ -280,7 +363,7 @@ def prompt(prompts, redir):
                     try:
                         val = cvrt_mul(val)
                     except ValueError:
-                        se.state['last_error'] = 'amount.not_digit2'
+                        se.runtime['last_error'] = 'amount.not_digit2'
                         app.after(0, hide_loading)
                         app.after_idle(lambda: change_screen('error'))
 
@@ -297,20 +380,20 @@ def prompt(prompts, redir):
 
                 if resp['status'] == "error":
                     data = resp.get('data')
-                    se.state['last_error'] = f"{lo.loc(resp.get('code'))}"
+                    se.runtime['last_error'] = f"{lo.loc(resp.get('code'))}"
                     if data:
-                        se.state['last_error'] += f"\n{data.get('e')}"
+                        se.runtime['last_error'] += f"\n{data.get('e')}"
                     app.after(0, hide_loading)
                     app.after_idle(lambda: change_screen('error'))
                 else:
                     app.after(0, hide_loading)
                     app.after_idle(lambda: change_screen('main'))
             except Exception as e:
-                se.state['last_error'] = str(e)
+                se.runtime['last_error'] = str(e)
                 app.after(0, hide_loading)
                 app.after_idle(lambda: change_screen('error'))
 
-            se.state['loading_msg'] = ""
+            se.runtime['loading_msg'] = ""
 
         threading.Thread(target=worker, daemon=True).start()
         top.destroy()
@@ -347,7 +430,7 @@ def _change_screen_gui(screen):
     if screen in SCREENS:
         SCREENS[screen]()
     else:
-        se.state['last_error'] = "client.screen_not_found"
+        se.runtime['last_error'] = "client.screen_not_found"
         SCREENS["error"]()
 
 
@@ -398,7 +481,7 @@ spinner_lbl_conn.place(relx=0.5, rely=0.5, anchor="center")
 # progressbar.start()
 # progressbar.place(relx=0.5, rely=0.5, anchor="center")
 
-tries_label = ctk.CTkLabel(conn_overlay, text=f"{lo.loc('client.tries')}{se.state['conn_tries']}", font=("Arial", 14))
+tries_label = ctk.CTkLabel(conn_overlay, text=f"{lo.loc('client.tries')}{se.runtime['conn_tries']}", font=("Arial", 14))
 tries_label.place(relx=0.5, rely=0.7, anchor="center")
 
 long_label = ctk.CTkLabel(conn_overlay, text=lo.loc(""), font=("Arial", 10))
@@ -409,9 +492,9 @@ exit_btn = btn_exit(conn_overlay)
 def update_connect():
     if not conn_overlay.winfo_exists() or not tries_label.winfo_exists():
         return
-    tries_label.configure(text=f"{lo.loc('client.tries')}{se.state['conn_tries']}")
+    tries_label.configure(text=f"{lo.loc('client.tries')}{se.runtime['conn_tries']}")
     conn_overlay.lift()
-    if se.state['conn_tries'] >= 10:
+    if se.runtime['conn_tries'] >= 10:
         long_label.configure(text=lo.loc("client.long_connection"))
         exit_btn.place(relx=0.5, rely=0.8, anchor="center")
     else:
@@ -437,12 +520,12 @@ loading.place(relx=0.5, rely=0.3, anchor="center")
 spinner_lbl_load = ctk.CTkLabel(loading_overlay, text="", image=frames[0])
 spinner_lbl_load.place(relx=0.5, rely=0.5, anchor="center")
 
-loading_load = ctk.CTkLabel(loading_overlay, text=se.state['loading_msg'], font=("Arial", 14))
+loading_load = ctk.CTkLabel(loading_overlay, text=se.runtime['loading_msg'], font=("Arial", 14))
 loading_load.place(relx=0.5, rely=0.6, anchor="center")
 
 
 def show_loading():
-    loading_load.configure(text=se.state['loading_msg'])
+    loading_load.configure(text=se.runtime['loading_msg'])
     loading_overlay.place(relwidth=1, relheight=1, x=0, y=0)
     loading_overlay.lift()
 
@@ -454,31 +537,31 @@ def hide_loading():
     spinner_lbl_load._stop_anim = True 
 
 def update_loading():
-    loading_load.configure(text=se.state['loading_msg'])
+    loading_load.configure(text=se.runtime['loading_msg'])
 
 
 # экраны
 def show_error_screen():
-    error_label = ctk.CTkLabel(app, text=f"{lo.loc('client.error')}: {lo.loc(se.state['last_error'])}", font=("Arial", 14))
+    error_label = ctk.CTkLabel(app, text=f"{lo.loc('client.error')}: {lo.loc(se.runtime['last_error'])}", font=("Arial", 14))
     error_label.place(relx=0.5, rely=0.45, anchor="center")
 
     exit_btn = btn_exit(app)
     exit_btn.place(relx=0.5, rely=0.55, anchor="center")
     
-    if se.state['retry_btn']:
-        target = se.state.get("retry_btn")
+    if se.runtime['retry_btn']:
+        target = se.runtime.get("retry_btn")
         retry_btn = ctk.CTkButton(app, text=lo.loc("client.retry"), font=("Arial", 14), command=lambda: change_screen(target), fg_color="#5C4E4E")
-        se.state['retry_btn'] = None
+        se.runtime['retry_btn'] = None
         retry_btn.place(relx=0.5, rely=0.75, anchor="center")
 
-    if se.state['token']:
+    if se.runtime['token']:
         menu_btn = ctk.CTkButton(app, text=lo.loc("client.menu"), font=("Arial", 14), command=lambda: change_screen('main'), fg_color="#5C4E4E")
         menu_btn.place(relx=0.5, rely=0.65, anchor="center")
 
 
 def show_login_screen():
     
-    err = se.state.pop("login_error", None)
+    err = se.runtime.pop("login_error", None)
     
     main_label = ctk.CTkLabel(app, text=lo.loc("login.main"), font=("Arial", 24))
     main_label.place(relx=0.5, rely=0.2, anchor="center")
@@ -495,45 +578,45 @@ def show_login_screen():
     exit_btn = btn_exit(app)
     exit_btn.place(relx=0.85, rely=0.05, anchor="center")
 
-    if se.state['login']:
-        login_entry.set(se.state['login'])
-    if se.state['pin']:
-        pin_entry.set(se.state['pin'])
+    if se.runtime['login']:
+        login_entry.set(se.runtime['login'])
+    if se.runtime['pin']:
+        pin_entry.set(se.runtime['pin'])
 
     def on_click():
             login = login_entry.get().strip()
             pin = pin_entry.get().strip()
 
-            se.state['loading_msg'] = lo.loc("loadmsg.processing")
+            se.runtime['loading_msg'] = lo.loc("loadmsg.processing")
             app.after_idle(show_loading)
 
             def worker():
                 resp = logic.login(login, pin)
                 if resp.get("status") == "ok":
-                    se.state["login"] = login
-                    se.state["pin"] = pin
-                    se.state["name"] = resp['data'].get('name')
-                    se.state["token"] = resp['data'].get("token")
+                    se.runtime["login"] = login
+                    se.runtime["pin"] = pin
+                    se.runtime["name"] = resp['data'].get('name')
+                    se.runtime["token"] = resp['data'].get("token")
                     app.after_idle(hide_loading)
                     app.after(0, lambda: change_screen("main"))
                 else:
-                    se.state["login_error"] = resp.get("code", "server.error")
+                    se.runtime["login_error"] = resp.get("code", "server.error")
                     print(resp.get('code'))
                     code = resp.get('code')
 
                     if code and code.startswith('login'):
-                        se.state["pin"] = pin
-                        se.state["login"] = None
+                        se.runtime["pin"] = pin
+                        se.runtime["login"] = None
                     elif code and code.startswith('pin'):
-                        se.state["login"] = login
-                        se.state["pin"] = None
+                        se.runtime["login"] = login
+                        se.runtime["pin"] = None
                     else:
-                        se.state["login"] = login
-                        se.state["pin"] = pin
+                        se.runtime["login"] = login
+                        se.runtime["pin"] = pin
 
                     app.after_idle(hide_loading)
                     app.after(0, lambda: change_screen("login"))
-                se.state['loading_msg'] = ""
+                se.runtime['loading_msg'] = ""
             threading.Thread(target=worker, daemon=True).start()
 
     login_button = ctk.CTkButton(app, text=lo.loc("login.button"), font=("Arial", 16), command=on_click)
@@ -543,7 +626,7 @@ def show_login_screen():
     link_button.place(relx=0.5, rely=0.8, anchor="center")
 
 def show_register_screen():
-    err = se.state.pop("login_error", None)
+    err = se.runtime.pop("login_error", None)
         
     main_label = ctk.CTkLabel(app, text=lo.loc("register.main"), font=("Arial", 24))
     main_label.place(relx=0.5, rely=0.2, anchor="center")
@@ -568,23 +651,23 @@ def show_register_screen():
         pin = pin_entry.get().strip()
         name = name_entry.get().strip()
 
-        se.state['loading_msg'] = lo.loc("loadmsg.processing")
+        se.runtime['loading_msg'] = lo.loc("loadmsg.processing")
         app.after_idle(show_loading)
     
         def worker():
             resp = logic.register(login, name, pin)
             if resp.get("status") == "ok":
-                se.state["login"] = login
-                se.state["pin"] = pin
-                se.state["name"] = name
-                se.state["token"] = resp['data'].get("token")
+                se.runtime["login"] = login
+                se.runtime["pin"] = pin
+                se.runtime["name"] = name
+                se.runtime["token"] = resp['data'].get("token")
                 app.after_idle(hide_loading)
                 app.after(0, lambda: change_screen("main"))
             else:
-                se.state["login_error"] = resp.get("code", "server.error")
+                se.runtime["login_error"] = resp.get("code", "server.error")
                 app.after_idle(hide_loading)
                 app.after(0, lambda: change_screen("register"))
-            se.state['loading_msg'] = ""
+            se.runtime['loading_msg'] = ""
     
         threading.Thread(target=worker, daemon=True).start()
     
@@ -595,11 +678,11 @@ def show_register_screen():
     link_button.place(relx=0.5, rely=0.8, anchor="center")
 
 def show_main_screen():
-    if not se.state['token']:
+    if not se.runtime['token']:
         change_screen('login')
         return
 
-    se.state['loading_msg'] = lo.loc("loadmsg.get_accounts")
+    se.runtime['loading_msg'] = lo.loc("loadmsg.get_accounts")
     app.after_idle(show_loading)
 
     # abv_label = ctk.CTkLabel(app, text=lo.loc("title"), font=("Arial", 10))
@@ -620,10 +703,10 @@ def show_main_screen():
 
     # конец кнопок
 
-    name_label = ctk.CTkLabel(app, text=f"{se.state['name']}", font=("Arial", 20))
+    name_label = ctk.CTkLabel(app, text=f"{se.runtime['name']}", font=("Arial", 20))
     name_label.pack(pady=0, padx=0, anchor="w")
 
-    login_label = ctk.CTkLabel(app, text=f"@{se.state['login']}", font=("Arial", 14), text_color="#8A8A8A")
+    login_label = ctk.CTkLabel(app, text=f"@{se.runtime['login']}", font=("Arial", 14), text_color="#8A8A8A")
     login_label.pack(pady=0, padx=0, anchor="w")
 
     cards_frame = ctk.CTkScrollableFrame(app, width=400, height=400)
@@ -633,12 +716,12 @@ def show_main_screen():
         log.info("[Render] Drawing main UI")
         ok = get_accounts()
 
-        se.state['loading_msg'] = lo.loc("loadmsg.card_drawing")
+        se.runtime['loading_msg'] = lo.loc("loadmsg.card_drawing")
         app.after(0, update_loading)
 
         if not ok:
-            se.state['retry_btn'] = 'main'
-            se.state['last_error'] = 'acc.cantget'
+            se.runtime['retry_btn'] = 'main'
+            se.runtime['last_error'] = 'acc.cantget'
             app.after(0, hide_loading)
             app.after(0, lambda: change_screen('error'))
             return
@@ -647,7 +730,7 @@ def show_main_screen():
             start_time = time.perf_counter()
             try:
                 num = 1
-                for acc in se.state['accounts']:
+                for acc in se.runtime['accounts']:
                     # log.info(f"[Render] Drawing card #{num}")
                     acc_num = acc[0]
                     name = acc[1]
@@ -659,12 +742,12 @@ def show_main_screen():
                     num += 1
 
                 elapsed_time = time.perf_counter() - start_time
-                app.after_idle(lambda: log.info(f"[Render] drawn {len(se.state['accounts'])} cards in {elapsed_time:.4f}s"))
+                app.after_idle(lambda: log.info(f"[Render] drawn {len(se.runtime['accounts'])} cards in {elapsed_time:.4f}s"))
             except Exception as e:
                 log.crit(f"[Render] cannot draw cards: {e}")
             finally:
                 
-                se.state['loading_msg'] = ""
+                se.runtime['loading_msg'] = ""
                 app.after(0, hide_loading)
 
         app.after_idle(render_cards)
@@ -676,7 +759,7 @@ def show_main_screen():
     threading.Thread(target=main_get_acc, daemon=True).start()
 
 def show_account_screen():
-    acc = se.state['current_acc']
+    acc = se.runtime['current_acc']
     # print(acc)
     if acc:
         acc_data = ctk.CTkLabel(app, text=f"{acc[1]}, №{acc[0]}. баланс - {cvrt_div(acc[3])} {acc[2]}", font=("Arial", 12), cursor="hand2")
@@ -706,6 +789,89 @@ def show_account_screen():
     transfer_button.pack(padx=0, pady=5, anchor="center")
 
 
+def show_settings_screen():
+    se.runtime['snapshot'] = se.settings.copy()
+
+    langs_map = lo.get_available_langs()
+    def on_language_change(selected_display_name: str):
+        selected_code = langs_map.get(selected_display_name)
+        if not selected_code:
+            return
+
+        se.settings["language"] = selected_code
+
+        lo.clear()
+        lo.json_init(selected_code)
+        
+    def on_save():
+        raw_port = port.get()
+        new_ip = ip.get()
+
+
+        if not raw_port.isdigit() or not (1 <= int(raw_port) <= 65535):
+        # Подсвечиваем поле порта красным при ошибке и не даем сохранить
+            port.configure(border_color="red")
+            return
+
+        # 2. Проверяем, что IP/домен не пустой
+        if not new_ip:
+            ip.configure(border_color="red")
+            return
+
+        new_port = int(raw_port)
+
+        if (se.settings['port'] != new_port) or (se.settings['ip'] != new_ip):
+            se.runtime['need_restart'] = True
+
+        se.settings['port'] = new_port
+        se.settings['ip'] = new_ip
+        
+        se.runtime.pop('snapshot', None)
+        settings.save()
+        change_screen('main')
+        return
+
+    def on_exit():
+        snapshot = se.runtime.pop('snapshot', None)
+        if snapshot:
+            se.settings.clear()
+            se.settings.update(snapshot)
+            lo.clear()
+            lo.json_init(se.settings["language"])
+        change_screen('main')
+
+    
+    save_btn = ctk.CTkButton(app, text=lo.loc('settings.save'), font=ICON_FONT, command=on_save)
+    save_btn.place(rely=0.8, relx=0.5, anchor="center")
+
+    exit_btn = ctk.CTkButton(app, text=lo.loc('settings.exit'), font=('Arial', 12), command=on_exit)
+    exit_btn.place(rely=0.9, relx=0.5, anchor="center")
+
+    lang_menu = ctk.CTkOptionMenu(app, values=list(langs_map.keys()), command=on_language_change)
+    
+    current_lang_name = lo.loc("lang")
+    if current_lang_name in langs_map:
+        lang_menu.set(current_lang_name)
+
+    lang_menu.place(rely=0.3, relx=0.5, anchor="center")
+
+    debug_var = ctk.BooleanVar(value=bool(se.settings["debug"]))
+    def on_debug():
+        se.settings["debug"] = debug_var.get()
+        settings.save()
+
+    checkbox = ctk.CTkCheckBox(app, text=lo.loc("settings.debug"), command=on_debug, variable=debug_var, onvalue=True, offvalue=False)
+    checkbox.place(rely=0.6, relx=0.5, anchor="center")
+
+    ip = ctk.CTkEntry(app, placeholder_text=lo.loc('settings.ip'))
+    ip.insert(0, str(se.settings['ip'] or ""))
+    ip.place(rely=0.4, relx=0.5, anchor="center")
+
+    port = ctk.CTkEntry(app, placeholder_text=lo.loc('settings.port'))
+    port.insert(0, str(se.settings['port'] or ""))
+    port.place(rely=0.5, relx=0.5, anchor="center")
+
+
 
 # доступные экраны (для change_screen)
 SCREENS = {
@@ -714,11 +880,12 @@ SCREENS = {
     "register": show_register_screen,
     "main": show_main_screen,
     "account": show_account_screen,
+    "settings": show_settings_screen,
 }
 
 # точка входа
 def client_main():
-    se.state['loading_msg'] = lo.loc("loadmsg.starting")
+    se.runtime['loading_msg'] = lo.loc("loadmsg.starting")
     app.after_idle(show_loading)
 
     wait_time = random.randint(0, 2)
@@ -728,18 +895,23 @@ def client_main():
         app.after((wait_time*1000), lambda: change_screen('main'))
         time.sleep(wait_time)
         app.after_idle(hide_loading)
+        # while True:
+        #     app.after((wait_time*1000), lambda: change_screen('main'))
+        #     time.sleep(1)
     except Exception as e:
         app.after_idle(hide_loading)
-        se.state['last_error'] = e
+        se.runtime['last_error'] = e
         change_screen("error")
 
-    se.state['loading_msg'] = ""
+    se.runtime['loading_msg'] = ""
 
 
 # запуск
+
+
 log.info("[INIT] Client_main started")
 threading.Thread(target=client_main, daemon=True).start()
-log.info("[INIT] Watchdog started")
+log.info("[INIT] Starting watchdog")
 threading.Thread(target=watchdog, daemon=True).start()
 
 

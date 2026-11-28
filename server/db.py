@@ -19,10 +19,24 @@ token_expire_time = TOKEN_EXPIRE_MINUTES
 
 
 
+import threading
+import functools
+
+db_lock = threading.RLock()
+
+def lock(func):
+    @functools.wraps(func) 
+    def wrapper(*args, **kwargs):
+        with db_lock:
+            return func(*args, **kwargs)
+    return wrapper
+
+
 def connect(path):
     global connection, cursor
     connection = sqlite3.connect(path, check_same_thread=False)
     connection.execute("PRAGMA foreign_keys = ON")
+    connection.execute("PRAGMA journal_mode=WAL")
     cursor = connection.cursor()
     return(connection, cursor)
 
@@ -80,7 +94,7 @@ def init():
         FOREIGN KEY (uuid) REFERENCES Users(uuid))''')
     connection.commit()
 
-
+@lock
 def create_user(login, name, pin_hash):
     usr_uuid = str(uuid.uuid4())
     cursor.execute("SELECT 1 FROM Users WHERE login = ?", (login,))
@@ -94,45 +108,46 @@ def create_user(login, name, pin_hash):
 
 
 # Получение данных
-
+@lock
 def get_user(user_uuid):
     cursor.execute("SELECT uuid, login, name, created_at, role FROM Users WHERE uuid = ?", (user_uuid,))
     return cursor.fetchone() 
 
-
+@lock
 def get_user_by_login(login):
     cursor.execute("SELECT uuid FROM Users WHERE login = ?", (login,))
     row = cursor.fetchone()
     return row[0] if row else None
 
-
+@lock
 def get_name_from_id(user_uuid):
     cursor.execute("SELECT name FROM Users WHERE uuid = ?", (user_uuid,))
     row = cursor.fetchone()
     return row[0] if row else "Пользователь"
 
-
+@lock
 def get_users_count():
     cursor.execute("SELECT COUNT(*) FROM Users")
     return cursor.fetchone()[0]
 
-
+@lock
 def get_pin_hash(user_uuid):
     cursor.execute("SELECT pin_hash FROM Users WHERE uuid = ?", (user_uuid,))
     row = cursor.fetchone()
     return row[0] if row else None
 
-
+@lock
 def get_login_by_uuid(user_uuid):
     cursor.execute("SELECT login FROM Users WHERE uuid = ?", (user_uuid,))
     row = cursor.fetchone()
     return row[0] if row else None
 
-
+@lock
 def get_role_by_uuid(user_uuid):
     cursor.execute("SELECT role FROM Users WHERE uuid = ?", (user_uuid,))
     return cursor.fetchone()
 
+@lock
 def get_premium_by_uuid(user_uuid):
     cursor.execute("SELECT has_premium FROM Users WHERE uuid = ?", (user_uuid,))
     has_premium = cursor.fetchone()
@@ -143,6 +158,7 @@ def get_premium_by_uuid(user_uuid):
     else:
         return False
 
+@lock
 def grant_premium(user_uuid, premium=True):
     if premium:
         has = 1
@@ -151,6 +167,7 @@ def grant_premium(user_uuid, premium=True):
     cursor.execute("UPDATE Users SET has_premium = ? WHERE uuid = ?", (has, user_uuid,))
     connection.commit()
 
+@lock
 def get_freeze_by_acc_uuid(acc_uuid):
     cursor.execute("SELECT is_frozen FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
     frozen = cursor.fetchone()
@@ -161,6 +178,7 @@ def get_freeze_by_acc_uuid(acc_uuid):
     else:
         return False
 
+@lock
 def set_freeze_acc(acc_uuid, freeze=True):
     if freeze:
         has = 1
@@ -171,16 +189,19 @@ def set_freeze_acc(acc_uuid, freeze=True):
  # Обновление данных
 
 
+@lock
 def update_name(user_uuid, new_name):
     cursor.execute("UPDATE Users SET name = ? WHERE uuid = ?", (new_name, user_uuid))
     connection.commit()
 
 
+@lock
 def update_login(user_uuid, new_login):
     cursor.execute("UPDATE Users SET login = ? WHERE uuid = ?", (new_login, user_uuid))
     connection.commit()
 
 
+@lock
 def update_pin_hash(user_uuid, new_pin_hash):
     cursor.execute("UPDATE Users SET pin_hash = ? WHERE uuid = ?", (new_pin_hash, user_uuid))
     connection.commit()
@@ -191,14 +212,14 @@ def update_pin_hash(user_uuid, new_pin_hash):
 
 
 # транзакции
-
+@lock
 def tr_add(user_uuid, acc_uuid, type, amount, balance_after, description):
     cursor.execute("""INSERT INTO Transactions (user_uuid, acc_uuid, type, amount, balance_after, description)
     VALUES (?, ?, ?, ?, ?, ?)""", (user_uuid, acc_uuid, type, amount, balance_after, description))
     connection.commit()
     return cursor.lastrowid
 
-
+@lock
 def tr_get_all(user_uuid):
     cursor.execute("""
         SELECT type, amount, balance_after, description, created_at
@@ -208,7 +229,7 @@ def tr_get_all(user_uuid):
     """, (user_uuid,))
     return cursor.fetchall()
 
-
+@lock
 def tr_get_recent(user_uuid, limit=10):
     cursor.execute("""
         SELECT type, amount, balance_after, description, created_at
@@ -219,6 +240,7 @@ def tr_get_recent(user_uuid, limit=10):
     """, (user_uuid, limit))
     return cursor.fetchall()
 
+@lock
 def tr_rollback():
     print("заглушка")
 
@@ -226,7 +248,7 @@ def tr_rollback():
 
 
 # Удаление пользователя
-
+@lock
 def delete_user(user_uuid):
     cursor.execute("DELETE FROM Transactions WHERE user_uuid = ?", (user_uuid,))
     cursor.execute("DELETE FROM Tokens WHERE uuid = ?", (user_uuid,))
@@ -236,7 +258,7 @@ def delete_user(user_uuid):
 
 
 # Работа с токенами
-
+@lock
 def create_token(user_uuid):
     token = secrets.token_urlsafe(32)
     expires_at = (datetime.now(timezone.utc) + timedelta(minutes=token_expire_time)).strftime('%Y-%m-%d %H:%M:%S')
@@ -244,58 +266,59 @@ def create_token(user_uuid):
     connection.commit()
     return token
 
-
+@lock
 def get_tokens_by_uuid(user_uuid):
     cursor.execute("SELECT * FROM Tokens WHERE uuid = ?", (user_uuid,))
     return cursor.fetchall()
 
-
+@lock
 def get_uuid_from_token(token):
     cursor.execute("SELECT uuid, expires_at FROM Tokens WHERE token = ?", (token,))
     return cursor.fetchone()
 
-
+@lock
 def remove_token(token):
     cursor.execute("DELETE FROM Tokens WHERE token = ?", (token,))
     connection.commit()
 
-
+@lock
 def remove_token_by_uuid(user_uuid):
     cursor.execute("DELETE FROM Tokens WHERE uuid = ?", (user_uuid,))
     connection.commit()
 
-
+@lock
 def unsafe_remove_all_tokens():
     cursor.execute("DELETE FROM Tokens")
     connection.commit()
 
-
+@lock
 def remove_expired_tokens(now_str):
     cursor.execute("DELETE FROM Tokens WHERE expires_at < ?", (now_str,))
     connection.commit()
     return cursor.rowcount
 
 
-
+@lock
 def table_get_users():
     cursor.execute("SELECT uuid, login, name, created_at, role FROM Users")
     return cursor.fetchall()
 
-
+@lock
 def table_get_tr():
     cursor.execute("SELECT * FROM Transactions")
     return cursor.fetchall()
 
-
+@lock
 def table_get_tokens():
     cursor.execute("SELECT * FROM Tokens")
     return cursor.fetchall()
 
+@lock
 def table_get_accounts():
     cursor.execute("SELECT * FROM Accounts")
     return cursor.fetchall()
 
-
+@lock
 def unsafe_set_balance_admin(acc_uuid, amount):
     user_uuid = get_user_by_acc_uuid(acc_uuid)
     old_bal = get_bal(acc_uuid)
@@ -313,16 +336,18 @@ def unsafe_set_balance_admin(acc_uuid, amount):
 
 
 
-
+@lock
 def update_bal(acc_uuid, new_bal):
     cursor.execute("UPDATE Accounts SET balance = ? WHERE acc_uuid = ?", (new_bal, acc_uuid))
     connection.commit()
 
+@lock
 def get_bal(acc_uuid):
     cursor.execute("SELECT balance FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
     row = cursor.fetchone()
     return row[0] if row else 0
 
+@lock
 def create_account(user_uuid, name, currency):
     acc_uuid = str(uuid.uuid4())
     bal = 0
@@ -335,39 +360,47 @@ def create_account(user_uuid, name, currency):
     connection.commit()
     return acc_uuid
 
+@lock
 def delete_account(acc_uuid):
     cursor.execute("UPDATE Accounts SET status = 'closed' WHERE acc_uuid = ?", (acc_uuid,))
     connection.commit()
 
+@lock
 def get_accounts_by_user(user_uuid):
     cursor.execute("SELECT acc_num, name, currency, balance, is_frozen FROM Accounts WHERE owner_uuid = ? AND status = 'active'", (user_uuid,))
     return cursor.fetchall()
 
+@lock
 def get_account_by_uuid(acc_uuid):
     cursor.execute("SELECT * FROM Accounts WHERE acc_uuid = ? AND status = 'active'", (acc_uuid,))
     row = cursor.fetchone()
     return row if row else None
 
+@lock
 def get_account_by_num(acc_num):
     cursor.execute("SELECT * FROM Accounts WHERE acc_num = ?", (acc_num,))
     row = cursor.fetchone()
     return row if row else None
 
+@lock
 def get_acc_name_by_uuid(acc_uuid):
     cursor.execute("SELECT name FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
     row = cursor.fetchone()
     return row[0] if row else None
 
+@lock
 def get_user_by_acc_uuid(acc_uuid):
     cursor.execute("SELECT owner_uuid FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
     row = cursor.fetchone()
     return row[0] if row else None
 
+@lock
 def get_num_by_uuid(acc_uuid):
     cursor.execute("SELECT acc_num FROM Accounts WHERE acc_uuid = ?", (acc_uuid,))
     row = cursor.fetchone()
     return row[0] if row else None
 
+@lock
 def get_uuid_by_num(acc_num):
     cursor.execute("SELECT acc_uuid FROM Accounts WHERE acc_num = ?", (acc_num,))
     row = cursor.fetchone()

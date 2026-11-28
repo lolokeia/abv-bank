@@ -1,0 +1,121 @@
+{
+    "code": "icons",
+    "lang": "\uE775 \uE894 \uF2B7",
+    
+    "title": "\uE825",
+    "pin.wrong": "\uE8D7 \uE711",
+    "pin.is_empty": "\uE8D7 \uE897",
+    "pin.invalid_length": "\uE8D7 \uE7BA",
+    "pin.invalid_chars": "\uE8D7 \uE8EF \uE7BA",
+
+    "login.is_empty": "\uE77B \uE897",
+    "login.invalid_length": "\uE77B \uE7BA",
+    "login.forbidden": "\uE77B \uE72E",
+    "login.invalid_chars": "\uE77B \uE7BA",
+    "login.taken": "\uE77B \uE716 \uE711",
+
+    "name.is_empty": "\uE70F \uE897",
+    "name.invalid_chars": "\uE70F \uE7BA",
+
+    "user.cannot_create": "\uE8FA \uE711",
+    "user.not_found": "\uE77B \uE721 \uE711",
+
+    "amount.not_digit": "\uE8EF \uE711",
+    "amount.negative": "\uE738 \uE7BA",
+    "amount.not_mul_100": "\uE8EF 100 \uE7BA",
+
+    "balance.negative": "\uE8C7 \uE738 \uE7BA",
+    "balance.insufficient": "\uE8C7 \uEA39",
+    "balance.is_not_empty": "\uE8C7 \uE74D \uE7BA",
+
+    "acc.default_delete": "\uE8C7 \uE735 \uE72E",
+
+    "transfer.recv_not_found": "\uE8AB \uE77B \uE721 \uE711",
+    "transfer.self": "\uE8AB \uE77B \uE77B \uE711",
+    "transfer.acc_num_wrong": "\uE8AB \uE8C7 \uE711",
+
+    "action.unknown": "\uE897",
+    "server.error": "\uE968 \uEA39",
+    "bad_request": "\uE72A \uE711",
+
+    "session.expired": "\uE823 \uE711",
+
+    "connection.reset": "\uE839 \uE72C",
+    "connection.no": "\uE839",
+    "connection.error": "\uE839 \uE783",
+
+    "client.error": "\uE783",
+    "client.screen_not_found": "\uE7F4 \uE721 \uE711",
+    "client.connecting": "\uE701 \uE895",
+    "client.long_connection": "\uE839 \uE823 \uE7BA",
+    "client.tries": "\uE72C #",
+    "client.exit": "\uE7E8",
+    "client.loading": "\uE895",
+    "client.retry": "\uE72C",
+    "client.menu": "\uE80F",
+    
+    "acc.cantget": "\uE8C7 \uE896 \uE711",
+    "acc.acc": "\uE8C7 #",
+
+    "login.main": "\uE77B \uE72A",
+    "login.login_entry": "\uE77B",
+    "login.pin_entry": "\uE8D7",
+    "login.button": "\uE72A",
+    "login.promt": "\uE77B \uE73E",
+
+    "register.main": "\uE8FA",
+    "register.promt": "\uE8FA \uE897",
+    "register.button": "\uE8FB",
+    "register.login_entry": "\uE77B",
+    "register.pin_entry": "\uE8D7 (4)",
+    "register.name_entry": "\uE70F",
+
+    "accounts.deposit": "\uE710 \uE8C7",
+    "accounts.withdraw": "\uE738 \uE8C7",
+    "accounts.payment": "\uE7BF",
+    "accounts.transfer": "\uE8AB",
+    "accounts.burn": "\uE74D \uE8C7",
+
+    "accounts.create": "\uE710",
+    "accounts.delete_acc": "\uE74D",
+    "accounts.get_history": "\uE81C",
+    "accounts.logout": "\uF3B1",
+    "accounts.create_acc": "\uE710 \uE8C7",
+
+    "accounts.pin": "\uE70F \uE8D7",
+    "accounts.login": "\uE70F \uE77B",
+    "accounts.name": "\uE70F \uE8A1",
+
+    "loadmsg.starting": "\uE7E8 \uE895",
+    "loadmsg.get_accounts": "\uE896 \uE8C7",
+    "loadmsg.processing": "\uE943 \uE895",
+    "loadmsg.card_drawing": "\uE790 \uE8C7",
+
+    "prompt.amount": "\uE8EF",
+
+    "prompt.pin": "\uE8D7",
+    "prompt.oldpin": "\uE81C \uE8D7",
+    "prompt.newpin": "\uE710 \uE8D7",
+
+    "prompt.login": "\uE77B",
+    "prompt.oldlogin": "\uE81C \uE77B",
+    "prompt.newlogin": "\uE710 \uE77B",
+
+    "prompt.name": "\uE70F",
+    "prompt.oldname": "\uE81C \uE70F",
+    "prompt.newname": "\uE710 \uE70F",
+
+    "prompt.acc_from": "\uE738 \uE8C7",
+    "prompt.acc_to": "\uE710 \uE8C7",
+
+    "prompt.recv_acc": "\uE77B \uE8C7",
+
+    "prompt.currency": "\uE8C7 \uE775",
+
+    "copy.tooltip": "\uE8C8",
+
+    "settings.title": "\uE713",
+    "settings.save": "\uE74E",
+    "settings.exit": "\uE711",
+    "settings.debug": "\uEBE8"
+}
